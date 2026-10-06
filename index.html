@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>สำรวจระบบสุริยะ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#02030a;
+  --ink:#ece8df;
+  --dim:#a4a39b;
+  --line:rgba(236,232,223,.16);
+  --panel:rgba(7,9,18,.78);
+  --gold:#ffb347;
+  --gold-soft:rgba(255,179,71,.15);
+  --display:'Prompt',system-ui,sans-serif;
+  --body:'Sarabun',system-ui,sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);overflow:hidden;font-family:var(--body);font-size:16px;line-height:1.6;-webkit-text-size-adjust:100%}
+*,*::before,*::after{box-sizing:inherit}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid #ffd08a;outline-offset:2px}
+
+#stage{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;z-index:0;cursor:grab}
+#stage:active{cursor:grabbing}
+#labels{position:fixed;inset:0;pointer-events:none;z-index:1;overflow:hidden}
+.label{position:absolute;left:0;top:0;font:500 13px/1 var(--body);color:var(--ink);text-shadow:0 1px 4px #000,0 0 8px #000;white-space:nowrap;will-change:transform;opacity:.9}
+.label.on{color:var(--gold);opacity:1}
+
+/* top rail */
+#rail{position:fixed;left:0;right:0;top:0;z-index:3;display:flex;flex-direction:column;align-items:stretch;gap:2px;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 22px;background:linear-gradient(to bottom,rgba(2,3,10,.9),rgba(2,3,10,0));pointer-events:none}
+#row1{display:flex;align-items:center;gap:6px;min-width:0;pointer-events:none}
+#row1>*{pointer-events:auto}
+#menubar{pointer-events:auto;align-self:flex-start;max-width:100%;display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;padding:0 2px}
+#menubar::-webkit-scrollbar{display:none}
+.brand{margin:0;font:600 18px/1 var(--display);flex:none}
+.brand button{background:none;border:0;padding:8px 10px 8px 4px;font:inherit;letter-spacing:.01em}
+#chips{display:flex;align-items:center;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px;-webkit-overflow-scrolling:touch;mask-image:linear-gradient(to right,#000 92%,transparent)}
+#chips::-webkit-scrollbar{display:none}
+.sep{flex:none;width:1px;height:18px;background:var(--line);margin:0 4px}
+.chip{flex:none;display:inline-flex;align-items:center;gap:7px;padding:6px 13px;border-radius:999px;background:rgba(10,13,26,.55);border:1px solid var(--line);font-size:14px;line-height:1.3;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:background .2s,border-color .2s}
+.chip i{width:9px;height:9px;border-radius:50%;flex:none}
+.chip:hover{background:rgba(24,28,48,.7)}
+.chip[aria-current="true"]{border-color:var(--gold);background:var(--gold-soft)}
+.chip[aria-pressed="true"]{border-color:var(--gold);background:var(--gold-soft)}
+.chip.hl{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold-soft)}
+.label.dim{opacity:.3}
+.menu-item{flex:none;background:none;border:0;border-bottom:2px solid transparent;padding:5px 11px 6px;font-size:14px;line-height:1.4;color:var(--dim);text-shadow:0 1px 4px #000;transition:color .2s,border-color .2s}
+.menu-item:hover{color:var(--ink)}
+.menu-item[aria-current="true"]{color:var(--gold);border-bottom-color:var(--gold)}
+.grp-block{margin:0 0 16px}
+.grp-block .note{margin:8px 0}
+.grp{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;padding:9px 14px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.03);font-weight:500;font-size:15px;text-align:left}
+.grp em{font-style:normal;color:var(--dim);font-size:13px;font-weight:400}
+.grp:hover{background:rgba(255,255,255,.07)}
+.grp[aria-pressed="true"]{border-color:var(--gold);background:var(--gold-soft)}
+ol.seq{margin:0;padding:0;list-style:none;display:grid;gap:6px;counter-reset:s}
+ol.seq li{display:flex;align-items:center;gap:10px;counter-increment:s}
+ol.seq li::before{content:counter(s);width:18px;text-align:right;color:var(--dim);font-size:13px;font-variant-numeric:tabular-nums}
+.cmp-list{border-bottom:1px solid var(--line)}
+.cmp{display:block;width:100%;padding:8px 0 9px;background:none;border:0;border-top:1px solid var(--line);text-align:left}
+.cmp .top{display:flex;justify-content:space-between;gap:12px;font-size:15px}
+.cmp .nm{display:flex;align-items:center;gap:8px}
+.cmp .nm i{width:9px;height:9px;border-radius:50%;flex:none}
+.cmp b{font-weight:500;font-variant-numeric:tabular-nums;text-align:right}
+.cmp .trk{display:block;position:relative;height:6px;margin-top:6px;border-radius:3px;background:rgba(255,255,255,.08);overflow:hidden}
+.cmp .trk i{position:absolute;top:0;bottom:0;border-radius:3px;background:var(--gold)}
+.cmp:hover .trk i{background:#ffd08a}
+details.sec{border-top:1px solid var(--line);padding:6px 0}
+details.sec:last-of-type{border-bottom:1px solid var(--line)}
+details.sec summary{cursor:pointer;padding:6px 0;font:600 16px/1.5 var(--display)}
+details.sec summary::marker{color:var(--gold)}
+details.sec p{margin:6px 0 10px;font-size:15px;line-height:1.7}
+
+/* info panel */
+#panel{position:fixed;z-index:4;top:calc(104px + env(safe-area-inset-top,0px));right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));width:min(380px,calc(100vw - 32px));overflow-y:auto;overscroll-behavior:contain;padding:22px 22px 26px;background:var(--panel);border:1px solid var(--line);border-radius:16px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);transform:translateX(calc(100% + 24px));visibility:hidden;transition:transform .45s cubic-bezier(.2,.8,.2,1),visibility 0s .45s}
+#panel.open{transform:none;visibility:visible;transition:transform .45s cubic-bezier(.2,.8,.2,1),visibility 0s}
+#panel .close{position:absolute;top:10px;right:10px;width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:transparent;display:grid;place-items:center}
+#panel .close:hover{background:rgba(255,255,255,.08)}
+#panel h2{margin:0 36px 2px 0;font:600 28px/1.25 var(--display)}
+#panel .kind{margin:0 0 14px;color:var(--dim);font-size:14px;display:flex;align-items:center;gap:8px}
+#panel .kind i{width:9px;height:9px;border-radius:50%;flex:none}
+#panel .lead{margin:0 0 18px;font-size:16px;line-height:1.7}
+#panel h3{margin:22px 0 8px;font:600 15px/1.4 var(--display);color:var(--gold)}
+dl.stats{margin:0}
+dl.stats .row{display:flex;justify-content:space-between;gap:16px;padding:8px 0;border-top:1px solid var(--line)}
+dl.stats .row:last-child{border-bottom:1px solid var(--line)}
+dl.stats dt{color:var(--dim);font-size:14px;flex:none}
+dl.stats dd{margin:0;text-align:right;font-weight:500;font-size:15px}
+#panel ul.facts{margin:0;padding-left:20px}
+#panel ul.facts li{margin:0 0 8px;font-size:15px;line-height:1.65;padding-left:2px}
+#panel ul.facts li::marker{color:var(--gold)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips .chip{font-size:14px;padding:5px 12px}
+.note{margin:12px 0 0;color:var(--dim);font-size:13px;line-height:1.6}
+.rank{display:grid;grid-template-columns:76px 1fr 44px;align-items:center;gap:10px;width:100%;padding:7px 0;background:none;border:0;text-align:left;font-size:15px}
+.rank .bar{height:6px;border-radius:3px;background:rgba(255,255,255,.08);overflow:hidden}
+.rank .bar i{display:block;height:100%;background:var(--gold);border-radius:3px}
+.rank b{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+.rank:hover .bar i{background:#ffd08a}
+
+/* controls */
+#controls{position:fixed;z-index:3;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:8px 10px;background:var(--panel);border:1px solid var(--line);border-radius:14px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);font-size:14px}
+#controls button{padding:5px 12px;border-radius:8px;border:1px solid var(--line);background:transparent;line-height:1.4}
+#controls button[aria-pressed="true"]{border-color:var(--gold);background:var(--gold-soft)}
+#controls label{display:flex;align-items:center;gap:8px;color:var(--dim)}
+#controls input[type=range]{width:110px;accent-color:var(--gold)}
+#controls output{min-width:36px;color:var(--ink);font-variant-numeric:tabular-nums}
+#hint{position:fixed;z-index:2;top:calc(108px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);max-width:calc(100vw - 32px);padding:6px 14px;border-radius:999px;background:rgba(10,13,26,.6);border:1px solid var(--line);color:var(--dim);font-size:13px;text-align:center;transition:opacity .8s;pointer-events:none}
+#hint.gone{opacity:0}
+
+/* loader */
+#loader{position:fixed;inset:0;z-index:10;display:grid;place-items:center;background:var(--bg);transition:opacity .9s;text-align:center;padding:24px}
+#loader.done{opacity:0;pointer-events:none}
+#loader h1{margin:0 0 6px;font:600 clamp(34px,8vw,60px)/1.2 var(--display)}
+#loader p{margin:0 0 22px;color:var(--dim)}
+#loader .bar{width:min(260px,70vw);height:3px;margin:0 auto;border-radius:2px;background:rgba(255,255,255,.1);overflow:hidden}
+#loader .bar i{display:block;height:100%;width:0;background:var(--gold);transition:width .25s}
+
+@media (max-width:720px){
+  .brand{font-size:16px}
+  #panel{top:auto;left:0;right:0;bottom:0;width:auto;max-height:50vh;border-radius:18px 18px 0 0;border-bottom:0;padding:20px 18px calc(22px + env(safe-area-inset-bottom,0px));transform:translateY(calc(100% + 24px))}
+  #panel.open{transform:none}
+  #panel h2{font-size:24px}
+  body.panel-open #controls{display:none}
+  #controls{left:10px;right:10px;justify-content:space-between}
+  #controls input[type=range]{width:90px}
+}
+@media (prefers-reduced-motion:reduce){
+  #panel,#panel.open,.chip,#hint,#loader{transition:none}
+}
+</style>
+</head>
+<body>
+<canvas id="stage" aria-label="แบบจำลองระบบสุริยะสามมิติ ลากเพื่อหมุนมุมมอง"></canvas>
+<div id="labels" aria-hidden="true"></div>
+
+<header id="rail">
+  <div id="row1">
+    <h1 class="brand"><button id="brand" type="button">ระบบสุริยะ</button></h1>
+    <nav id="chips" aria-label="เลือกดาว"></nav>
+  </div>
+  <nav id="menubar" aria-label="เมนูเนื้อหา">
+    <button type="button" class="menu-item" data-menu="m-parts">องค์ประกอบ</button>
+    <button type="button" class="menu-item" data-menu="m-groups">จัดกลุ่มดาวเคราะห์</button>
+    <button type="button" class="menu-item" data-menu="m-compare">เปรียบเทียบดาว</button>
+    <button type="button" class="menu-item" data-menu="m-others">วัตถุท้องฟ้าอื่นๆ</button>
+    <button type="button" class="menu-item" data-menu="m-help">วิธีใช้</button>
+  </nav>
+</header>
+
+<div id="hint">ลากเพื่อหมุนมุมมอง เลื่อนล้อเมาส์หรือบีบนิ้วเพื่อซูม แตะที่ดาวเพื่อดูข้อมูล</div>
+
+<aside id="panel" aria-label="ข้อมูลดาว"></aside>
+
+<div id="controls">
+  <button id="play" type="button" aria-pressed="false">หยุด</button>
+  <label>ความเร็ว <input id="speed" type="range" min="0" max="20" step="0.5" value="1"><output id="speedOut">1×</output></label>
+  <button id="tOrbits" type="button" aria-pressed="true">เส้นวงโคจร</button>
+  <button id="tLabels" type="button" aria-pressed="true">ชื่อดาว</button>
+</div>
+
+<div id="loader">
+  <div>
+    <h1>ระบบสุริยะ</h1>
+    <p id="loadMsg">กำลังสร้างพื้นผิวดาวแต่ละดวง</p>
+    <div class="bar"><i id="barFill"></i></div>
+  </div>
+</div>
+
+<noscript><p style="position:fixed;inset:0;display:grid;place-items:center;margin:0;background:#02030a;z-index:20">หน้านี้ต้องเปิดใช้ JavaScript</p></noscript>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+'use strict';
+
+/* ==========================================================
+   ข้อมูลของแต่ละดาว: แก้ไขข้อความและตัวเลขได้ที่ส่วนนี้
+   - stats  = แถวข้อมูลในกล่อง (ชื่อหัวข้อ, ค่า)
+   - facts  = เรื่องน่ารู้ (ข้อความสั้นๆ ทีละข้อ)
+   - moonCount = จำนวนดวงจันทร์ที่รู้จักทั้งหมด (ใช้จัดอันดับในหน้าภาพรวม)
+   ========================================================== */
+const DATA = {
+  sun:{ name:'ดวงอาทิตย์', kind:'ดาวฤกษ์ ศูนย์กลางของระบบสุริยะ', color:'#ffb347',
+    lead:'ดวงอาทิตย์เป็นดาวฤกษ์เพียงดวงเดียวในระบบสุริยะและเป็นศูนย์กลางของระบบสุริยะ เป็นดาวฤกษ์ขนาดเล็กเมื่อเทียบกับดาวฤกษ์อื่นๆ บนท้องฟ้า',
+    stats:[['ชนิดของดาว','ดาวฤกษ์สีเหลือง'],['อายุ','ประมาณ 5,000 ล้านปี'],['ระยะห่างจากโลก','149.60 ล้าน กม.'],['เส้นผ่านศูนย์กลาง','1,392,530 กม.'],['เทียบกับโลก','ใหญ่กว่าเกือบ 109 เท่า'],['หมุนรอบตัวเอง 1 รอบ','27 วัน'],['อุณหภูมิพื้นผิวเฉลี่ย','ประมาณ 6,000 °C']],
+    facts:['เป็นดาวฤกษ์ที่อยู่ใกล้โลกที่สุด จึงปรากฏให้เราเห็นเป็นดวงกลมโตบนท้องฟ้าเพียงดวงเดียว','ดาวฤกษ์ดวงอื่นๆ ปรากฏเป็นจุดสว่าง เพราะอยู่ไกลจากโลกมาก']},
+  mercury:{ name:'ดาวพุธ', kind:'ดาวเคราะห์หิน (ดาวเคราะห์วงใน)', color:'#b0a89c', moonCount:0,
+    lead:'เป็นดาวเคราะห์ที่มีขนาดเล็กและอยู่ใกล้ดวงอาทิตย์มากที่สุด จึงมีอุณหภูมิพื้นผิวสูงมาก ประมาณ 430 องศาเซลเซียส',
+    stats:[['เส้นผ่านศูนย์กลาง','4,879 กม.'],['ระยะห่างจากดวงอาทิตย์เฉลี่ย','57.91 ล้าน กม.'],['โคจรรอบดวงอาทิตย์ 1 รอบ','87.97 วัน'],['หมุนรอบตัวเอง 1 รอบ','58.65 วัน'],['อุณหภูมิพื้นผิวเฉลี่ย','−180 ถึง 430 °C']],
+    facts:['โคจรรอบดวงอาทิตย์ใช้เวลาเกือบเท่ากับเวลาที่ใช้หมุนรอบตัวเอง ด้านที่หันเข้าหาดวงอาทิตย์จึงร้อนมาก อีกด้านหนึ่งเย็นจัด ดาวพุธจึงได้ชื่อว่า “เตาไฟแช่แข็ง”','พื้นผิวเป็นฝุ่นและหินเช่นเดียวกับดวงจันทร์ มีหลุมลึกเป็นจำนวนมาก หลุมที่ใหญ่ที่สุดชื่อฟอสซา แคลอริส (Fossa Caloris)','มองเห็นได้ด้วยตาเปล่าในตอนเช้าก่อนดวงอาทิตย์ขึ้นครึ่งชั่วโมง และหลังจากดวงอาทิตย์ตกครึ่งชั่วโมง']},
+  venus:{ name:'ดาวศุกร์', kind:'ดาวเคราะห์หิน (ดาวเคราะห์วงใน)', color:'#e3c58b', moonCount:0,
+    lead:'มีขนาดใกล้เคียงกับโลก จึงได้ชื่อว่าเป็น “ฝาแฝด” ของโลก และอยู่ห่างจากดวงอาทิตย์เป็นอันดับที่ 2',
+    stats:[['เส้นผ่านศูนย์กลาง','12,104 กม.'],['ระยะห่างจากดวงอาทิตย์เฉลี่ย','108.21 ล้าน กม.'],['โคจรรอบดวงอาทิตย์ 1 รอบ','224.70 วัน'],['หมุนรอบตัวเอง 1 รอบ','243 วัน'],['อุณหภูมิพื้นผิวเฉลี่ย','ประมาณ 470 °C']],
+    facts:['จากการสำรวจโดยยานอวกาศ พบว่ามีพื้นผิวแห้งแล้ง และมีบรรยากาศหนาแน่นเป็น 90 เท่าของโลก','แก๊สส่วนใหญ่ในบรรยากาศเป็นคาร์บอนไดออกไซด์และไอของกรดกำมะถัน ไม่มีแก๊สออกซิเจนและไอน้ำ','บรรยากาศหนาทึบดูดกลืนความร้อนของดวงอาทิตย์ไว้และทำหน้าที่เหมือนเรือนกระจก อุณหภูมิจึงสูงกว่าดาวพุธมาก','ปรากฏสว่างที่สุดในดาวเคราะห์ทั้ง 8 ดวง เห็นทางทิศตะวันออกในเวลาใกล้รุ่ง เรียกว่า ดาวประกายพรึก หรือดาวรุ่ง และเห็นทางขอบฟ้าด้านทิศตะวันตกตอนดวงอาทิตย์ลับขอบฟ้า เรียกว่า ดาวประจำเมือง']},
+  earth:{ name:'โลก', kind:'ดาวเคราะห์หิน', color:'#4f8fe0', moonCount:1,
+    lead:'อยู่ห่างจากดวงอาทิตย์เป็นอันดับที่ 3 มีดวงจันทร์เป็นบริวาร 1 ดวง และเป็นดาวเคราะห์ที่มีลักษณะพิเศษต่างไปจากดาวเคราะห์ดวงอื่นๆ',
+    stats:[['ระยะห่างจากดวงอาทิตย์','149.60 ล้าน กม.'],['หมุนรอบตัวเอง 1 รอบ (1 วัน)','23 ชม. 56 นาที'],['โคจรรอบดวงอาทิตย์ 1 รอบ (1 ปี)','365.26 วัน'],['แกนโลกเอียง','23.5 องศา'],['อุณหภูมิพื้นผิวเฉลี่ย','15 °C'],['แก๊สออกซิเจนในบรรยากาศ','ประมาณ 21%']],
+    facts:['เป็นดาวเคราะห์ดวงเดียวที่มีพื้นผิวส่วนใหญ่ปกคลุมด้วยน้ำ 3 ใน 4 ส่วนของพื้นโลก โลกจึงได้ชื่อว่า “ดาวเคราะห์แห่งพื้นน้ำ”','โคจรเป็นวงรีรอบดวงอาทิตย์ แกนโลกเอียงกับแนวตั้งฉากกับระนาบทางโคจร จึงทำให้เกิดฤดูกาลต่างๆ บนโลก','อุณหภูมิ ปริมาณออกซิเจน และน้ำ ก่อให้เกิดสภาพแวดล้อมที่เอื้ออำนวยให้มีสิ่งมีชีวิตเกิดขึ้นและดำรงชีวิตอยู่ได้']},
+  mars:{ name:'ดาวอังคาร', kind:'ดาวเคราะห์หิน (ดาวเคราะห์วงนอก)', color:'#c8663f', moonCount:2,
+    lead:'อยู่ห่างจากดวงอาทิตย์เป็นอันดับที่ 4 ได้รับฉายาว่า “ดาวเคราะห์แดง” เพราะที่พื้นผิวมีสนิมของเหล็กอยู่จำนวนมาก สีผิวจึงออกไปทางสีแดง',
+    stats:[['เส้นผ่านศูนย์กลาง','6,792 กม.'],['ระยะห่างจากดวงอาทิตย์เฉลี่ย','227.94 ล้าน กม.'],['โคจรรอบดวงอาทิตย์ 1 รอบ','687 วัน'],['หมุนรอบตัวเอง 1 รอบ','24.62 ชั่วโมง (1 วัน)'],['อุณหภูมิพื้นผิวเฉลี่ย','−87 ถึง −5 °C']],
+    facts:['พื้นผิวมีร่องรอยการไหลผ่านของน้ำ จึงเคยเชื่อกันว่าอาจมีสิ่งมีชีวิตอาศัยอยู่','ยานไวกิง 1 และ 2 ของสหรัฐอเมริกาพบว่า พื้นผิวสีแดงเต็มไปด้วยก้อนหิน มีหุบเหวลึกและกว้างใหญ่ และไม่พบร่องรอยของสิ่งมีชีวิต','มีดาวบริวาร 2 ดวง คือ โฟบอสและดีมอส ค้นพบครั้งแรกในปี พ.ศ. 2420 โดยเอเซฟ ฮอลล์ มองเห็นได้ด้วยกล้องโทรทรรศน์กำลังขยายสูง','แกนเอียงคล้ายโลก จึงเกิดฤดูกาลเหมือนโลก และ 1 วันบนดาวอังคารเกือบเท่ากับ 1 วันบนโลก']},
+  belt:{ name:'แถบดาวเคราะห์น้อย', kind:'ดาวเคราะห์น้อย', color:'#8d8578',
+    lead:'ดาวเคราะห์น้อยเป็นวัตถุขนาดเล็กๆ จำนวนมากที่อยู่ในระบบสุริยะ ประกอบด้วยหินและโลหะ ซึ่งเกาะกันเป็นวงแหวนอยู่ระหว่างดาวอังคารและดาวพฤหัสบดี',
+    stats:[['ขนาด','เท่าเม็ดฝุ่นจนถึงเกือบพันกิโลเมตร'],['ส่วนประกอบ','หินและโลหะ'],['ตำแหน่ง','ระหว่างดาวอังคารและดาวพฤหัสบดี'],['ระยะห่างจากโลก','ประมาณ 150 ถึง 354 ล้าน กม.']],
+    facts:['ใหญ่ที่สุดมีเส้นผ่านศูนย์กลางเกือบพันกิโลเมตร','จัดเป็นบริวารของดวงอาทิตย์และโคจรรอบดวงอาทิตย์ เช่นเดียวกับดาวดวงอื่นๆ']},
+  ceres:{ name:'ซีรีส', kind:'ดาวเคราะห์แคระ', color:'#b9b4aa', moonCount:0,
+    lead:'ซีรีสเป็นดาวเคราะห์แคระ คือวัตถุที่มีวงโคจรรอบดวงอาทิตย์ และมีมวลมากพอที่จะทำให้เกิดแรงดึงดูดจนวัตถุมีขนาดเกือบทรงกลม',
+    stats:[['ประเภท','ดาวเคราะห์แคระ'],['วงโคจร','รอบดวงอาทิตย์ ซ้อนทับหรือใกล้เคียงกับวัตถุอื่น'],['รูปร่าง','เกือบทรงกลม'],['เป็นบริวารของดาวเคราะห์','ไม่เป็น']],
+    facts:['ดาวเคราะห์แคระมีสมบัติเหมือนดาวเคราะห์ แต่แตกต่างกันที่ดาวเคราะห์ไม่มีวงโคจรซ้อนทับหรือใกล้เคียงกับวัตถุอื่น','ปัจจุบันมีวัตถุท้องฟ้าที่ถูกจัดว่าเป็นดาวเคราะห์แคระ เช่น ซีรีส อีริส เฮาเมอา มาคีมาคี']},
+  jupiter:{ name:'ดาวพฤหัสบดี', kind:'ดาวเคราะห์แก๊ส (ดาวเคราะห์วงนอก)', color:'#d8b08a', moonCount:62,
+    lead:'เป็นดาวเคราะห์ที่มีขนาดใหญ่ที่สุดและมีเนื้อสารมากที่สุด อยู่ห่างจากดวงอาทิตย์เป็นอันดับที่ 5',
+    stats:[['เส้นผ่านศูนย์กลาง','142,980 กม.'],['ระยะห่างจากดวงอาทิตย์เฉลี่ย','778.41 ล้าน กม.'],['โคจรรอบดวงอาทิตย์ 1 รอบ','11.86 ปี'],['หมุนรอบตัวเอง 1 รอบ','9.92 ชั่วโมง'],['อุณหภูมิพื้นผิวเฉลี่ย','ประมาณ −148 °C']],
+    facts:['เป็นดาวที่มีความหนาแน่นน้อย เพราะเป็นดาวเคราะห์แก๊ส จึงไม่เป็นหินแข็งเหมือนโลกของเรา','ยานวอยเอเจอร์ 1 และ 2 พบว่ามีจุดแดงขนาดใหญ่เป็นวง ซึ่งเป็นกลุ่มแก๊สร้อนหมุนวนด้วยความเร็วสูง','ในปี พ.ศ. 2153 กาลิเลโอค้นพบดวงจันทร์บริวารขนาดใหญ่ 4 ดวง คือ ไอโอ ยูโรปา แกนีมีด และคัลลิสโต เรียกรวมว่า ดาวบริวารกาลิเลียน']},
+  saturn:{ name:'ดาวเสาร์', kind:'ดาวเคราะห์แก๊ส (ดาวเคราะห์วงนอก)', color:'#e0c892', moonCount:62,
+    lead:'เป็นดาวเคราะห์ที่มีขนาดใหญ่เป็นอันดับที่ 2 รองจากดาวพฤหัสบดี อยู่ห่างจากดวงอาทิตย์เป็นอันดับที่ 6',
+    stats:[['เส้นผ่านศูนย์กลาง','120,540 กม.'],['ระยะห่างจากดวงอาทิตย์เฉลี่ย','1,427 ล้าน กม.'],['โคจรรอบดวงอาทิตย์ 1 รอบ','29.47 ปี'],['หมุนรอบตัวเอง 1 รอบ','10.66 ชั่วโมง'],['อุณหภูมิพื้นผิวเฉลี่ย','ประมาณ −178 °C'],['ความหนาแน่น','0.7 กรัมต่อลูกบาศก์เซนติเมตร (น้อยกว่าน้ำ)']],
+    facts:['ยานวอยเอเจอร์ 1 และ 2 พบว่ามีวงแหวน 7 ชั้นใหญ่ๆ และมีวงแหวนเล็กซ้อนกันอยู่จำนวนมาก ซึ่งเป็นลักษณะเด่นของดาวเสาร์','วงแหวนคืออนุภาคน้ำแข็งและก้อนหินที่ปกคลุมด้วยน้ำแข็ง','ดวงจันทร์บริวารที่ใหญ่ที่สุดของดาวเสาร์คือ ไททัน ถูกค้นพบเมื่อปี พ.ศ. 2198']},
+  uranus:{ name:'ดาวยูเรนัส', kind:'ดาวเคราะห์แก๊ส (ดาวเคราะห์วงนอก)', color:'#8fd6dd', moonCount:27,
+    lead:'หรือดาวมฤตยู เป็นดาวเคราะห์ที่มีขนาดใหญ่เป็นอันดับที่ 3 รองจากดาวพฤหัสบดีและดาวเสาร์ อยู่ห่างจากดวงอาทิตย์เป็นอันดับที่ 7',
+    stats:[['เส้นผ่านศูนย์กลาง','51,120 กม.'],['ระยะห่างจากดวงอาทิตย์เฉลี่ย','2,870 ล้าน กม.'],['โคจรรอบดวงอาทิตย์ 1 รอบ','80 ปี'],['หมุนรอบตัวเอง 1 รอบ','17.24 ชั่วโมง'],['อุณหภูมิพื้นผิวเฉลี่ย','ประมาณ −216 °C']],
+    facts:['ถูกค้นพบโดยวิลเลียม เฮอร์เชล เมื่อปี พ.ศ. 2324 โดยอาศัยกล้องโทรทรรศน์','ยานวอยเอเจอร์พบว่ามีวงแหวนบางๆ 10 ชั้น','บรรยากาศประกอบด้วยแก๊สไฮโดรเจน ฮีเลียม มีเทน และอะเซทิลีน แก๊สมีเทนในบรรยากาศชั้นบนดูดซับแสงสีแดงเอาไว้ เราจึงมองเห็นดาวยูเรนัสมีสีเขียว','ดวงจันทร์บริวารที่ค้นพบแล้ว 27 ดวง มี 5 ดวงหลัก ได้แก่ มิแรนดา แอเรียล อัมเบรียล ทิทาเนีย และโอเบอรอน']},
+  neptune:{ name:'ดาวเนปจูน', kind:'ดาวเคราะห์แก๊ส (ดาวเคราะห์วงนอก)', color:'#4d6fe0', moonCount:13,
+    lead:'หรือดาวสมุทร หรือดาวเกตุ เป็นดาวเคราะห์ที่อยู่ห่างจากดวงอาทิตย์เป็นอันดับที่ 8',
+    stats:[['เส้นผ่านศูนย์กลาง','49,530 กม.'],['ระยะห่างจากดวงอาทิตย์เฉลี่ย','4,498 ล้าน กม.'],['โคจรรอบดวงอาทิตย์ 1 รอบ','164.80 ปี'],['หมุนรอบตัวเอง 1 รอบ','16.11 ชั่วโมง'],['อุณหภูมิพื้นผิวเฉลี่ย','ประมาณ −214 °C']],
+    facts:['โจฮันน์ จี. กาลเล นักดาราศาสตร์ชาวเยอรมัน ใช้กล้องโทรทรรศน์ตรวจพบเมื่อปี พ.ศ. 2389 และหลังจากนั้นไม่นานมีการค้นพบดวงจันทร์บริวารชื่อ ไทรทัน กับนีรีด','ยานวอยเอเจอร์ 2 พบว่ามีวงแหวนประมาณ 5 วง แต่เป็นวงแหวนที่มืดมาก เราจึงสังเกตจากโลกไม่ได้','ประกอบด้วยแก๊สไฮโดรเจนและแก๊สฮีเลียม จึงจัดเป็นดาวเคราะห์แก๊สประเภทเดียวกับดาวพฤหัสบดี ดาวเสาร์ และดาวยูเรนัส','เกร็ดวิทย์: ดาวเคราะห์ที่มีวงแหวนมี 4 ดวง ได้แก่ ดาวพฤหัสบดี ดาวเสาร์ ดาวยูเรนัส และดาวเนปจูน แต่ถ้ามองจากโลกโดยใช้กล้องโทรทรรศน์ จะมองเห็นวงแหวนของดาวเสาร์เพียงดวงเดียว']},
+
+  moon:{ name:'ดวงจันทร์', kind:'ดวงจันทร์ของโลก', color:'#d8d4ca',
+    lead:'ดวงจันทร์ดวงเดียวของโลก เป็นวัตถุนอกโลกเพียงแห่งเดียวที่มนุษย์เคยไปเหยียบ',
+    stats:[['เส้นผ่านศูนย์กลาง','3,474 กม.'],['ระยะจากโลก','384,400 กม.'],['คาบโคจร','27.3 วัน']],
+    facts:['หมุนรอบตัวเองด้วยคาบเท่ากับคาบโคจร เราจึงเห็นด้านเดียวเสมอ','เป็นดวงจันทร์ที่ใหญ่เป็นอันดับ 5 ในระบบสุริยะ','แรงดึงดูดของดวงจันทร์ทำให้เกิดน้ำขึ้นน้ำลงบนโลก']},
+  phobos:{ name:'โฟบอส', kind:'ดวงจันทร์ของดาวอังคาร', color:'#a18f80',
+    lead:'ดวงจันทร์ก้อนหินรูปร่างเหมือนมันฝรั่ง โคจรใกล้ดาวอังคารมาก',
+    stats:[['ขนาด','ราว 22 กม.'],['ระยะจากดาวอังคาร','9,376 กม.'],['คาบโคจร','ราว 7 ชม. 39 นาที']],
+    facts:['โคจรเร็วกว่าที่ดาวอังคารหมุน จึงขึ้นทางทิศตะวันตก','มีหลุมสติกนีย์ขนาดใหญ่ กว้างราว 9 กม.']},
+  deimos:{ name:'ดีมอส', kind:'ดวงจันทร์ของดาวอังคาร', color:'#9a8c80',
+    lead:'ดวงจันทร์ดวงเล็กและอยู่ไกลกว่าของดาวอังคาร ผิวเรียบกว่าโฟบอส',
+    stats:[['ขนาด','ราว 12 กม.'],['ระยะจากดาวอังคาร','23,460 กม.'],['คาบโคจร','ราว 1.26 วัน']],
+    facts:['หลุมอุกกาบาตส่วนใหญ่ถูกฝุ่นละเอียดปกคลุมจนดูเรียบ']},
+  io:{ name:'ไอโอ', kind:'ดวงจันทร์ของดาวพฤหัสบดี', color:'#e6c85a',
+    lead:'วัตถุที่มีภูเขาไฟปะทุมากที่สุดในระบบสุริยะ ผิวสีเหลืองส้มจากกำมะถัน',
+    stats:[['เส้นผ่านศูนย์กลาง','3,643 กม.'],['ระยะจากดาวพฤหัส','421,700 กม.'],['คาบโคจร','1.77 วัน']],
+    facts:['แรงน้ำขึ้นน้ำลงจากดาวพฤหัสบีบตัวไอโอจนภายในร้อน','มีภูเขาไฟที่ยังคุกรุ่นอยู่มากกว่า 400 ลูก']},
+  europa:{ name:'ยูโรปา', kind:'ดวงจันทร์ของดาวพฤหัสบดี', color:'#e8dfd0',
+    lead:'ดวงจันทร์ผิวน้ำแข็งที่มีมหาสมุทรน้ำเค็มซ่อนอยู่ใต้เปลือก เป็นเป้าหมายสำคัญในการค้นหาสิ่งมีชีวิต',
+    stats:[['เส้นผ่านศูนย์กลาง','3,122 กม.'],['ระยะจากดาวพฤหัส','671,000 กม.'],['คาบโคจร','3.55 วัน']],
+    facts:['มีน้ำเหลวใต้ผิวมากกว่าน้ำในมหาสมุทรทั้งหมดของโลกรวมกัน','ยานยูโรปาคลิปเปอร์ขององค์การนาซากำลังเดินทางไปสำรวจ']},
+  ganymede:{ name:'แกนีมีด', kind:'ดวงจันทร์ของดาวพฤหัสบดี', color:'#b0a490',
+    lead:'ดวงจันทร์ที่ใหญ่ที่สุดในระบบสุริยะ ใหญ่กว่าดาวพุธ',
+    stats:[['เส้นผ่านศูนย์กลาง','5,268 กม.'],['ระยะจากดาวพฤหัส','1,070,000 กม.'],['คาบโคจร','7.15 วัน']],
+    facts:['เป็นดวงจันทร์ดวงเดียวที่รู้ว่ามีสนามแม่เหล็กของตัวเอง','คาดว่ามีมหาสมุทรใต้ผิวแทรกอยู่ระหว่างชั้นน้ำแข็ง']},
+  callisto:{ name:'คัลลิสโต', kind:'ดวงจันทร์ของดาวพฤหัสบดี', color:'#7d7366',
+    lead:'ดวงจันทร์ที่มีหลุมอุกกาบาตหนาแน่นที่สุดดวงหนึ่ง พื้นผิวเก่าแก่มากและแทบไม่เปลี่ยนแปลง',
+    stats:[['เส้นผ่านศูนย์กลาง','4,821 กม.'],['ระยะจากดาวพฤหัส','1,883,000 กม.'],['คาบโคจร','16.7 วัน']],
+    facts:['ผิวเก่าแก่ราว 4,000 ล้านปี','อาจมีมหาสมุทรใต้ผิวเช่นเดียวกับยูโรปาและแกนีมีด']},
+  titan:{ name:'ไททัน', kind:'ดวงจันทร์ของดาวเสาร์', color:'#d9a05a',
+    lead:'ดวงจันทร์ที่ใหญ่ที่สุดของดาวเสาร์ และเป็นดวงจันทร์ดวงเดียวที่มีบรรยากาศหนาแน่น',
+    stats:[['เส้นผ่านศูนย์กลาง','5,150 กม.'],['ระยะจากดาวเสาร์','1,222,000 กม.'],['คาบโคจร','15.9 วัน']],
+    facts:['มีทะเลสาบและแม่น้ำของมีเทนและอีเทนเหลวบนพื้นผิว','ยานดรากอนฟลายของนาซามีแผนไปสำรวจด้วยการบินในบรรยากาศ']},
+  enceladus:{ name:'เอนเซลาดัส', kind:'ดวงจันทร์ของดาวเสาร์', color:'#eef3f8',
+    lead:'ดวงจันทร์เล็กสีขาวสว่าง พ่นไอน้ำและอนุภาคน้ำแข็งออกมาจากรอยแยกที่ขั้วใต้',
+    stats:[['เส้นผ่านศูนย์กลาง','504 กม.'],['ระยะจากดาวเสาร์','238,000 กม.'],['คาบโคจร','1.37 วัน']],
+    facts:['มีมหาสมุทรใต้ผิว และเป็นหนึ่งในเป้าหมายค้นหาสิ่งมีชีวิต','ละอองที่พ่นออกมาหล่อเลี้ยงวงแหวนอีของดาวเสาร์']},
+  rhea:{ name:'รีอา', kind:'ดวงจันทร์ของดาวเสาร์', color:'#cfccc6',
+    lead:'ดวงจันทร์ใหญ่เป็นอันดับสองของดาวเสาร์ ผิวส่วนใหญ่เป็นน้ำแข็ง เต็มไปด้วยหลุมอุกกาบาต',
+    stats:[['เส้นผ่านศูนย์กลาง','1,527 กม.'],['ระยะจากดาวเสาร์','527,000 กม.'],['คาบโคจร','4.5 วัน']],
+    facts:['ความหนาแน่นต่ำ แสดงว่าประกอบด้วยน้ำแข็งเป็นส่วนใหญ่']},
+  miranda:{ name:'มิแรนดา', kind:'ดวงจันทร์ของดาวยูเรนัส', color:'#bdbab4',
+    lead:'ดวงจันทร์ขนาดเล็กที่พื้นผิวเหมือนเศษชิ้นส่วนต่อกัน มีทั้งหน้าผาและร่องลึก',
+    stats:[['เส้นผ่านศูนย์กลาง','472 กม.'],['ระยะจากดาวยูเรนัส','129,900 กม.'],['คาบโคจร','1.41 วัน']],
+    facts:['มีหน้าผาเวโรนาที่สูงหลายกิโลเมตร สูงที่สุดแห่งหนึ่งในระบบสุริยะ']},
+  titania:{ name:'ไททาเนีย', kind:'ดวงจันทร์ของดาวยูเรนัส', color:'#b8b2a8',
+    lead:'ดวงจันทร์ที่ใหญ่ที่สุดของดาวยูเรนัส ตั้งชื่อตามราชินีแห่งนางฟ้าในบทละครของเชกสเปียร์',
+    stats:[['เส้นผ่านศูนย์กลาง','1,577 กม.'],['ระยะจากดาวยูเรนัส','436,000 กม.'],['คาบโคจร','8.7 วัน']],
+    facts:['มีหุบเหวและรอยแยกยาวบนพื้นผิว']},
+  oberon:{ name:'โอเบอรอน', kind:'ดวงจันทร์ของดาวยูเรนัส', color:'#a39a90',
+    lead:'ดวงจันทร์ที่อยู่ไกลที่สุดในกลุ่มดวงจันทร์ใหญ่ของดาวยูเรนัส ผิวเก่าและมีหลุมมาก',
+    stats:[['เส้นผ่านศูนย์กลาง','1,523 กม.'],['ระยะจากดาวยูเรนัส','583,500 กม.'],['คาบโคจร','13.5 วัน']],
+    facts:['หลุมอุกกาบาตบางแห่งมีก้นหลุมเป็นสีเข้ม']},
+  triton:{ name:'ไทรทัน', kind:'ดวงจันทร์ของดาวเนปจูน', color:'#e2cfcf',
+    lead:'ดวงจันทร์ที่ใหญ่ที่สุดของดาวเนปจูน โคจรย้อนทิศกับการหมุนของดาวแม่ สันนิษฐานว่าถูกดึงดูดเข้ามาจากแถบไคเปอร์',
+    stats:[['เส้นผ่านศูนย์กลาง','2,707 กม.'],['ระยะจากดาวเนปจูน','354,800 กม.'],['คาบโคจร','5.88 วัน (โคจรย้อนทิศ)'],['อุณหภูมิที่ผิว','ราว −235 °C']],
+    facts:['มีไกเซอร์ไนโตรเจนพ่นขึ้นจากพื้นผิว','เป็นหนึ่งในวัตถุที่เย็นที่สุดเท่าที่เคยสำรวจในระบบสุริยะ']}
+};
+const OVERVIEW = {
+  lead:'เลือกดาวจากแถบด้านบน หรือแตะที่ดาวในภาพ เพื่อซูมเข้าไปดูและอ่านข้อมูล',
+  moonNote:'จำนวนดวงจันทร์ที่ยืนยันแล้วเปลี่ยนไปเรื่อยๆ เมื่อมีการค้นพบใหม่'
+};
+
+/* ============ พื้นผิวดาวจำลองด้วยโค้ด ============ */
+// <TEX>
+const clamp=(x,a,b)=>x<a?a:x>b?b:x;
+const mix=(a,b,t)=>a+(b-a)*t;
+const smooth=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t);};
+const mixc=(a,b,t)=>[mix(a[0],b[0],t),mix(a[1],b[1],t),mix(a[2],b[2],t)];
+function ramp(stops,t){
+  t=clamp(t,0,1);
+  for(let i=1;i<stops.length;i++){
+    if(t<=stops[i][0]){const a=stops[i-1],b=stops[i];return mixc(a[1],b[1],(t-a[0])/((b[0]-a[0])||1));}
+  }
+  return stops[stops.length-1][1];
+}
+function h3(x,y,z){let h=Math.imul(x|0,374761393)^Math.imul(y|0,668265263)^Math.imul(z|0,1274126177);h=Math.imul(h^(h>>>13),1274126177);h^=h>>>16;return (h>>>0)/4294967296;}
+function vn(x,y,z){
+  const xi=Math.floor(x),yi=Math.floor(y),zi=Math.floor(z),xf=x-xi,yf=y-yi,zf=z-zi;
+  const u=xf*xf*(3-2*xf),v=yf*yf*(3-2*yf),w=zf*zf*(3-2*zf);
+  const a=h3(xi,yi,zi),b=h3(xi+1,yi,zi),c=h3(xi,yi+1,zi),d=h3(xi+1,yi+1,zi),e=h3(xi,yi,zi+1),f=h3(xi+1,yi,zi+1),g=h3(xi,yi+1,zi+1),h=h3(xi+1,yi+1,zi+1);
+  const x1=a+(b-a)*u,x2=c+(d-c)*u,x3=e+(f-e)*u,x4=g+(h-g)*u,y1=x1+(x2-x1)*v,y2=x3+(x4-x3)*v;
+  return y1+(y2-y1)*w;
+}
+function fbm(x,y,z,o){let a=0.5,f=1,s=0,n=0;for(let i=0;i<o;i++){s+=a*vn(x*f,y*f,z*f);n+=a;f*=2.03;a*=0.5;}return s/n;}
+function craters(x,y,z,f,seed){
+  x*=f;y*=f;z*=f;
+  const xi=Math.floor(x),yi=Math.floor(y),zi=Math.floor(z);let s=0;
+  for(let a=-1;a<=1;a++)for(let b=-1;b<=1;b++)for(let c=-1;c<=1;c++){
+    const cx=xi+a,cy=yi+b,cz=zi+c;
+    if(h3(cx+seed,cy,cz+7)>0.5)continue;
+    const px=cx+h3(cx,cy+seed,cz+1),py=cy+h3(cx+3,cy,cz+seed),pz=cz+h3(cx,cy+5,cz+seed*2);
+    const r=0.16+0.34*h3(cx+9,cy+seed,cz);
+    const dx=x-px,dy=y-py,dz=z-pz,d=Math.sqrt(dx*dx+dy*dy+dz*dz)/r;
+    if(d<1)s-=(1-d*d)*0.45;
+    const rim=1-Math.abs(d-1)/0.22;if(rim>0)s+=rim*0.3;
+  }
+  return s;
+}
+function makeTex(w,h,fn){
+  const c=document.createElement('canvas');c.width=w;c.height=h;
+  const ctx=c.getContext('2d');const img=ctx.createImageData(w,h);const d=img.data;
+  for(let j=0;j<h;j++){
+    const lat=(0.5-(j+0.5)/h)*Math.PI,cl=Math.cos(lat),sl=Math.sin(lat);
+    for(let i=0;i<w;i++){
+      const lon=((i+0.5)/w)*2*Math.PI;
+      const col=fn(cl*Math.cos(lon),sl,cl*Math.sin(lon),lat,lon,i,j);
+      const k=(j*w+i)*4;d[k]=col[0];d[k+1]=col[1];d[k+2]=col[2];d[k+3]=col[3]===undefined?255:col[3];
+    }
+  }
+  ctx.putImageData(img,0,0);
+  const t=new THREE.CanvasTexture(c);t.anisotropy=8;return t;
+}
+function withSpot(fn,lon0,lat0,rad,col,k){
+  return (x,y,z,lat,lon,i,j)=>{
+    const c=fn(x,y,z,lat,lon,i,j);let dl=lon-lon0;dl=Math.atan2(Math.sin(dl),Math.cos(dl))*Math.cos(lat);
+    const d=Math.sqrt(dl*dl+(lat-lat0)*(lat-lat0))/rad;
+    return d>=1?c:mixc(c,col,k*(1-d*d));
+  };
+}
+function rockyFn(o){
+  const s=o.seed||0;
+  return (x,y,z)=>{
+    let g=o.lo+(o.hi-o.lo)*clamp((fbm(x*3+s,y*3,z*3,5)-0.3)*2.5,0,1);
+    if(o.mare)g*=1-o.mare*smooth(0.5,0.58,fbm(x*1.5+s+9,y*1.5,z*1.5,4));
+    if(o.crat)g+=(craters(x,y,z,5,s)+0.6*craters(x,y,z,13,s+5))*o.crat*0.35;
+    g+=(vn(x*60,y*60,z*60)-0.5)*0.06;g=clamp(g,0,1.25);
+    return [o.tint[0]*g,o.tint[1]*g,o.tint[2]*g];
+  };
+}
+/* โลก: ใช้รูปร่างทวีปคร่าวๆ (ละติจูด/ลองจิจูด) วาดเป็นหน้ากากแล้วเติมสีด้วยสัญญาณรบกวน */
+const LAND=[
+ [[-168,65],[-160,71],[-141,70],[-125,70],[-110,68],[-95,72],[-82,68],[-80,63],[-94,59],[-92,57],[-82,55],[-79,52],[-78,58],[-70,60],[-62,58],[-56,52],[-60,47],[-66,45],[-70,42],[-74,40],[-76,35],[-81,31],[-80,26],[-82,26],[-84,30],[-90,30],[-94,29],[-97,26],[-97,21],[-91,19],[-90,21],[-87,21],[-88,16],[-84,15],[-83,10],[-79,9],[-77,8],[-80,7],[-84,9],[-87,13],[-92,15],[-96,16],[-105,20],[-106,23],[-110,23],[-112,25],[-115,30],[-117,33],[-121,35],[-124,40],[-124,46],[-125,49],[-130,55],[-137,58],[-146,61],[-152,59],[-158,57],[-165,55],[-160,59],[-165,62]],
+ [[-77,8],[-72,12],[-63,11],[-60,8],[-52,5],[-50,0],[-44,-2],[-35,-5],[-35,-9],[-39,-14],[-39,-20],[-43,-23],[-48,-26],[-49,-30],[-53,-34],[-58,-35],[-57,-38],[-62,-39],[-65,-42],[-65,-47],[-69,-51],[-68,-55],[-72,-54],[-75,-50],[-74,-42],[-73,-37],[-71,-30],[-70,-20],[-76,-14],[-81,-6],[-80,-1],[-78,2]],
+ [[-9,37],[-9,43],[-2,44],[-4,48],[2,51],[8,54],[9,57],[12,56],[10,59],[5,59],[5,62],[12,66],[18,70],[28,71],[40,67],[44,68],[58,70],[70,73],[80,73],[100,77],[113,74],[130,71],[142,72],[160,70],[170,70],[180,68],[178,65],[170,60],[163,58],[160,52],[156,57],[150,59],[142,59],[137,54],[141,53],[140,48],[133,43],[129,41],[128,38],[126,35],[126,38],[122,40],[118,38],[122,37],[120,33],[122,30],[120,24],[110,21],[108,17],[107,11],[105,9],[101,13],[100,8],[103,1],[100,4],[98,9],[98,16],[94,17],[92,22],[88,22],[80,15],[78,8],[73,17],[72,21],[67,25],[57,25],[56,27],[50,30],[48,29],[51,25],[56,24],[59,22],[55,17],[52,16],[45,13],[43,13],[39,21],[35,28],[34,31],[35,34],[36,36],[32,36.5],[28,36.7],[26,38.5],[26,40],[23,40.5],[23,38],[21,38],[20,40],[19,42],[13.5,45.5],[12.5,44],[14,42],[18,40.2],[16.5,38],[15.5,40],[12,42],[10,44],[7,43.6],[3,43],[3,42],[0,39],[-1,37.5],[-5,36]],
+ [[-17,21],[-17,15],[-13,9],[-8,4.5],[-1,5],[5,6],[9,4],[9,-1],[13,-6],[12,-14],[15,-24],[18,-32],[20,-35],[26,-34],[32,-28],[35,-22],[35,-17],[40,-11],[39,-5],[41,-2],[51,11],[43,12],[39,17],[37,21],[33,29],[32,31],[25,32],[20,31],[11,33],[10,37],[1,36.5],[-6,35.7],[-10,30],[-13,27]],
+ [[114,-22],[122,-18],[130,-12],[137,-12],[136,-15],[141,-17],[142,-11],[146,-19],[153,-26],[150,-37],[141,-38],[135,-34],[130,-32],[124,-33],[115,-34],[114,-26]],
+ [[-73,78],[-60,82],[-30,83],[-18,80],[-20,70],[-30,68],[-42,60],[-50,64],[-55,70],[-68,76]],
+ [[-180,-90],[180,-90],[180,-70],[150,-68],[100,-66],[60,-68],[20,-70],[-30,-72],[-60,-68],[-90,-72],[-130,-74],[-180,-71]],
+ [[-5,50],[1,51],[2,53],[-2,56],[-2,58],[-5,58.5],[-6,56],[-3,54],[-5,52]],
+ [[-10,52],[-6,52],[-6,55],[-8,55],[-10,54]],
+ [[130,31],[132,34],[136,34],[140,36],[141,41],[142,44],[145,43],[141,45],[140,40],[137,37],[132,35],[130,33]],
+ [[95,5],[98,4],[104,-2],[106,-6],[101,-3]],
+ [[109,1],[111,-3],[116,-4],[119,1],[117,7],[113,3]],
+ [[105,-6],[114,-8],[108,-8]],
+ [[131,-1],[141,-3],[150,-10],[143,-9],[137,-5]],
+ [[44,-25],[47,-25],[50,-15],[49,-12],[44,-17]],
+ [[172,-34],[178,-38],[175,-42],[172,-40]],
+ [[167,-46],[174,-41],[171,-46]],
+ [[-24,64],[-14,64],[-15,66],[-23,66]]
+];
+function landMask(w,h){
+  const c=document.createElement('canvas');c.width=w;c.height=h;
+  const g=c.getContext('2d');g.fillStyle='#000';g.fillRect(0,0,w,h);g.fillStyle='#fff';
+  for(const poly of LAND){
+    g.beginPath();
+    poly.forEach((p,i)=>{const x=(p[0]+180)/360*w,y=(90-p[1])/180*h;if(i)g.lineTo(x,y);else g.moveTo(x,y);});
+    g.closePath();g.fill();
+  }
+  const d=g.getImageData(0,0,w,h).data,m=new Uint8Array(w*h);
+  for(let i=0;i<m.length;i++)m[i]=d[i*4];
+  return m;
+}
+function earthFn(W,H){
+  const m=landMask(W,H);
+  const S=(i,j)=>{const x=(((Math.floor(i))%W)+W)%W;const y=clamp(Math.floor(j),0,H-1);return m[y*W+x]/255;};
+  return (x,y,z,lat,lon,i,j)=>{
+    const jx=(fbm(x*7+3,y*7,z*7,4)-0.5)*34,jy=(fbm(x*7,y*7+9,z*7,4)-0.5)*34,ci=i+jx,cj=j+jy;
+    const land=(S(ci,cj)*2+S(ci+1.5,cj)+S(ci-1.5,cj)+S(ci,cj+1.5)+S(ci,cj-1.5))/6;
+    const coast=(S(ci+10,cj)+S(ci-10,cj)+S(ci,cj+10)+S(ci,cj-10)+S(ci+20,cj+20)+S(ci-20,cj-20))/6;
+    const la=Math.abs(lat)/(Math.PI/2);
+    const e=fbm(x*4+7,y*4,z*4,5),n2=fbm(x*9+1,y*9,z*9,3);
+    const band=Math.exp(-Math.pow((la*90-24)/13,2));
+    const dry=clamp(band*1.1+(fbm(x*2.2+20,y*2.2,z*2.2,3)-0.5)*1.6,0,1);
+    let L=mixc([36,88,42],[80,124,58],clamp((n2-0.35)*3.3,0,1));
+    L=mixc(L,[190,162,106],dry*0.85);
+    L=mixc(L,[120,106,90],smooth(0.55,0.66,e));
+    const snow=Math.max(smooth(0.70,0.78,la+(n2-0.5)*0.12),smooth(0.64,0.72,e)*smooth(0.25,0.5,la));
+    L=mixc(L,[240,242,248],snow);
+    const sh=clamp(coast*1.6+(e-0.5)*0.3,0,1);
+    let O=mixc([5,22,64],[26,104,160],Math.pow(sh,0.8));
+    O=mixc(O,[222,236,246],smooth(0.80,0.88,la+(n2-0.5)*0.1));
+    return mixc(O,L,smooth(0.35,0.65,land));
+  };
+}
+const cloudsFn=()=>(x,y,z)=>{const n=fbm(x*3,y*4.5,z*3,6);return [255,255,255,smooth(0.5,0.7,n)*235];};
+const venusFn=()=>(x,y,z)=>{
+  const w=fbm(x*2+5,y*2,z*2,3),n=fbm(x*2.5+w*2.2,y*6+w,z*2.5+w*2.2,5);
+  return ramp([[0,[168,116,64]],[0.45,[214,172,104]],[0.7,[236,206,140]],[1,[250,236,190]]],clamp((n-0.3)*2.6,0,1));
+};
+const marsFn=()=>(x,y,z,lat)=>{
+  const n=fbm(x*2.6+2,y*2.6,z*2.6,5);
+  let c=ramp([[0,[92,46,30]],[0.5,[168,92,56]],[1,[222,150,98]]],clamp((n-0.28)*2.6,0,1));
+  c=mixc(c,[64,38,30],smooth(0.54,0.62,fbm(x*1.6+30,y*1.6,z*1.6,4))*0.55);
+  const cr=1+craters(x,y,z,6,2)*0.4;c=[c[0]*cr,c[1]*cr,c[2]*cr];
+  return mixc(c,[240,238,235],smooth(0.84,0.92,Math.abs(lat)/(Math.PI/2)+(fbm(x*8,y*8,z*8,3)-0.5)*0.12));
+};
+const jupiterFn=()=>(x,y,z,lat,lon)=>{
+  const L=lat+(fbm(x*3,y*3,z*3,4)-0.5)*0.22;
+  let b=0.5+0.5*Math.sin(L*20+Math.sin(L*6.5)*1.4);
+  b=clamp(b+(fbm(x*8,y*34,z*8,4)-0.5)*0.55,0,1);
+  let c=ramp([[0,[122,78,52]],[0.35,[186,132,92]],[0.62,[226,198,160]],[1,[244,232,208]]],b);
+  c=mixc(c,[110,100,95],smooth(1.0,1.5,Math.abs(lat))*0.5);
+  let dl=lon-3.7;dl=Math.atan2(Math.sin(dl),Math.cos(dl))*Math.cos(lat);const dy=lat+0.4;
+  const d=(dl*dl)/(0.24*0.24)+(dy*dy)/(0.1*0.1);
+  if(d<1.7){c=mixc(c,[178,76,50],smooth(1.7,0.4,d)*0.92);if(d<0.45)c=mixc(c,[150,54,38],0.5);}
+  return c;
+};
+const saturnFn=()=>(x,y,z,lat)=>{
+  const L=lat+(fbm(x*3,y*3,z*3,3)-0.5)*0.06;
+  let b=0.5+0.5*Math.sin(L*15+Math.sin(L*5)*0.8);
+  b=clamp(b*0.6+0.2+(fbm(x*6,y*30,z*6,4)-0.5)*0.3,0,1);
+  return ramp([[0,[168,138,92]],[0.5,[208,184,132]],[1,[236,220,176]]],b);
+};
+const uranusFn=()=>(x,y,z,lat)=>{
+  const t=clamp(0.5+(fbm(x*2,y*8,z*2,3)-0.5)*0.6+0.12*Math.sin(lat*8),0,1);
+  return ramp([[0,[138,196,206]],[1,[172,224,230]]],t);
+};
+const neptuneFn=()=>{
+  const base=(x,y,z,lat)=>{
+    const L=lat+(fbm(x*3,y*3,z*3,3)-0.5)*0.1;
+    let b=clamp(0.5+0.28*Math.sin(L*13+Math.sin(L*4))+(fbm(x*4,y*14,z*4,4)-0.5)*0.5,0,1);
+    let c=ramp([[0,[26,48,150]],[0.6,[46,86,204]],[1,[100,146,238]]],b);
+    const st=smooth(0.64,0.72,fbm(x*4+3,y*14,z*4,4))*smooth(0.9,0.1,Math.abs(lat+0.6));
+    return mixc(c,[230,238,255],st*0.7);
+  };
+  return withSpot(base,2.4,-0.35,0.2,[14,24,92],0.8);
+};
+const sunFn=()=>(x,y,z,lat)=>{
+  const w=fbm(x*2+1,y*2,z*2,3),n1=fbm(x*3+w*1.5,y*3,z*3+w*1.5,5),n2=fbm(x*9+n1*2,y*9,z*9,4);
+  const t=clamp((n1*0.65+n2*0.35-0.3)*2.4,0,1);
+  const spot=smooth(0.64,0.72,fbm(x*4+50,y*4,z*4,3))*smooth(0.55,0.2,Math.abs(lat));
+  const c=ramp([[0,[140,26,0]],[0.35,[232,92,8]],[0.7,[255,164,36]],[1,[255,236,160]]],t),k=1-0.55*spot;
+  return [c[0]*k,c[1]*k,c[2]*k];
+};
+const skyFn=()=>{
+  const nx=0.35,ny=0.88,nz=0.32,nl=Math.hypot(nx,ny,nz);
+  return (x,y,z)=>{
+    const c=(x*nx+y*ny+z*nz)/nl,band=Math.exp(-(c*c)/(2*0.12*0.12));
+    const n=fbm(x*3+11,y*3,z*3,5),dust=smooth(0.52,0.66,fbm(x*6+3,y*6,z*6,4));
+    let v=band*(0.25+1.1*clamp((n-0.3)*2.2,0,1))*(1-0.65*dust)+Math.exp(-(c*c)/(2*0.5*0.5))*0.06;
+    return [3+v*70,4+v*64,9+v*90];
+  };
+};
+const ioFn=()=>(x,y,z)=>{
+  const n=fbm(x*3+60,y*3,z*3,5);
+  let c=ramp([[0,[168,92,40]],[0.45,[224,190,76]],[0.8,[240,226,130]],[1,[250,244,200]]],clamp((n-0.3)*2.6,0,1));
+  c=mixc(c,[48,34,26],smooth(0.62,0.68,fbm(x*9+8,y*9,z*9,3))*0.85);
+  return mixc(c,[196,62,40],smooth(0.7,0.76,fbm(x*14+3,y*14,z*14,2))*0.5);
+};
+const europaFn=()=>(x,y,z)=>{
+  const n=fbm(x*3,y*3,z*3,4);
+  const c=mixc([196,176,148],[240,236,228],clamp((n-0.3)*2.5,0,1));
+  const l1=1-smooth(0,0.03,Math.abs(fbm(x*5+4,y*5,z*5,3)-0.5)),l2=1-smooth(0,0.018,Math.abs(fbm(x*11+9,y*11,z*11,3)-0.5));
+  return mixc(c,[142,92,60],Math.max(l1*0.8,l2*0.5));
+};
+const titanFn=()=>(x,y,z)=>ramp([[0,[168,104,44]],[1,[232,172,92]]],clamp((fbm(x*2,y*5,z*2,4)-0.3)*2.5,0,1));
+const enceladusFn=()=>(x,y,z,lat)=>{
+  const g=0.92+0.08*fbm(x*4,y*4,z*4,3);
+  let c=[243*g,247*g,252*g];
+  const l=1-smooth(0,0.014,Math.abs(fbm(x*9+2,y*9,z*9,3)-0.5));
+  return mixc(c,[150,200,235],l*(0.35+0.5*smooth(-0.9,-1.4,lat)));
+};
+const mirandaFn=()=>(x,y,z)=>{
+  const v=smooth(0.49,0.51,fbm(x*4+41,y*4,z*4,4));
+  const g=clamp(0.45+0.3*v+(fbm(x*10,y*10,z*10,3)-0.5)*0.2+craters(x,y,z,7,4)*0.12,0,1.1);
+  return [190*g,188*g,184*g];
+};
+const tritonFn=()=>(x,y,z,lat)=>{
+  let c=mixc([200,170,170],[242,228,226],clamp((fbm(x*3,y*3,z*3,4)-0.3)*2.5,0,1));
+  c=mixc(c,[250,225,215],smooth(-0.3,-1.0,lat)*0.7);
+  c=mixc(c,[70,55,60],smooth(0.62,0.7,fbm(x*8+5,y*8,z*8,3))*0.5);
+  const cr=1+craters(x,y,z,6,6)*0.1;return [c[0]*cr,c[1]*cr,c[2]*cr];
+};
+const TEXGEN={
+  sky:()=>makeTex(1024,512,skyFn()),
+  sun:()=>makeTex(512,256,sunFn()),
+  earth:()=>makeTex(1024,512,earthFn(1024,512)),
+  earthClouds:()=>makeTex(512,256,cloudsFn()),
+  mercury:()=>makeTex(512,256,rockyFn({lo:.35,hi:.78,tint:[190,180,170],crat:.8,seed:5})),
+  venus:()=>makeTex(512,256,venusFn()),
+  mars:()=>makeTex(512,256,marsFn()),
+  jupiter:()=>makeTex(1024,512,jupiterFn()),
+  saturn:()=>makeTex(512,256,saturnFn()),
+  uranus:()=>makeTex(256,128,uranusFn()),
+  neptune:()=>makeTex(512,256,neptuneFn()),
+  moon:()=>makeTex(512,256,rockyFn({lo:.38,hi:.8,tint:[236,233,226],crat:.9,mare:.45,seed:3})),
+  phobos:()=>makeTex(256,128,rockyFn({lo:.25,hi:.6,tint:[150,130,115],crat:.8,seed:11})),
+  deimos:()=>makeTex(256,128,rockyFn({lo:.3,hi:.62,tint:[152,138,126],crat:.4,seed:13})),
+  io:()=>makeTex(256,128,ioFn()),
+  europa:()=>makeTex(256,128,europaFn()),
+  ganymede:()=>makeTex(256,128,rockyFn({lo:.55,hi:.95,tint:[172,160,144],crat:.7,mare:.5,seed:23})),
+  callisto:()=>makeTex(256,128,rockyFn({lo:.4,hi:.65,tint:[142,128,112],crat:1.3,seed:17})),
+  titan:()=>makeTex(256,128,titanFn()),
+  enceladus:()=>makeTex(256,128,enceladusFn()),
+  rhea:()=>makeTex(256,128,rockyFn({lo:.5,hi:.85,tint:[220,218,214],crat:.8,seed:29})),
+  miranda:()=>makeTex(256,128,mirandaFn()),
+  titania:()=>makeTex(256,128,rockyFn({lo:.4,hi:.7,tint:[185,180,172],crat:.6,seed:31})),
+  oberon:()=>makeTex(256,128,rockyFn({lo:.35,hi:.65,tint:[165,155,148],crat:.8,seed:37})),
+  triton:()=>makeTex(256,128,tritonFn()),
+  ceres:()=>makeTex(256,128,withSpot(rockyFn({lo:.3,hi:.55,tint:[185,180,172],crat:.9,seed:41}),2.2,0.35,0.16,[255,255,250],0.9))
+};
+function ringTex(kind){
+  const w=1024,c=document.createElement('canvas');c.width=w;c.height=2;
+  const g=c.getContext('2d'),img=g.createImageData(w,2);
+  for(let i=0;i<w;i++){
+    const t=i/(w-1);let a,k;
+    const n=vn(t*60,3.1,7.7)*0.5+vn(t*180,1.3,2.2)*0.3+vn(t*500,9,9)*0.2;
+    if(kind==='saturn'){
+      if(t<0.1)a=0;else if(t<0.16)a=0.18;else if(t<0.46)a=0.55+0.4*n;else if(t<0.52)a=0.06;else if(t<0.97)a=0.45+0.35*n;else a=0;
+      if(t>0.86&&t<0.875)a*=0.15;
+      k=0.8+0.35*n;
+    }else{a=(t>0.1&&t<0.9)?0.4*(0.4+vn(t*80,1,1)):0;k=0.7;}
+    const col=kind==='saturn'?[218*k,200*k,165*k]:[150,160,170];
+    for(let r=0;r<2;r++){const o=(r*w+i)*4;img.data[o]=col[0];img.data[o+1]=col[1];img.data[o+2]=col[2];img.data[o+3]=clamp(a,0,1)*255;}
+  }
+  g.putImageData(img,0,0);
+  return new THREE.CanvasTexture(c);
+}
+// </TEX>
+
+/* ============ ฉาก 3 มิติ ============ */
+const rad=d=>d*Math.PI/180;
+const canvas=document.getElementById('stage');
+const loaderEl=document.getElementById('loader');
+let renderer;
+try{
+  renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+}catch(err){
+  document.getElementById('loadMsg').textContent='อุปกรณ์นี้ไม่รองรับกราฟิก 3 มิติ (WebGL) ลองเปิดด้วยเบราว์เซอร์อื่น';
+  document.querySelector('#loader .bar').style.display='none';
+  return;
+}
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+renderer.setClearColor(0x02030a);
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(48,1,0.1,9000);
+let W=1,H=1;
+function resize(){
+  W=window.innerWidth;H=window.innerHeight;
+  renderer.setSize(W,H);camera.aspect=W/H;camera.updateProjectionMatrix();
+}
+window.addEventListener('resize',resize);resize();
+
+const REDUCED=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const MOBILE=window.matchMedia('(max-width:720px)');
+const ZERO=new THREE.Vector3();
+
+const PLANETS=[
+  {id:'mercury',R:30,r:1.7,tilt:0.03,rot:1408,P:88,phase:0.6},
+  {id:'venus',R:44,r:2.7,tilt:177,rot:-5832,P:224.7,phase:2.1,atmo:['#e8b86a',1.15,0.5]},
+  {id:'earth',R:60,r:2.9,tilt:23.4,rot:23.9,P:365.25,phase:4.0,atmo:['#5b9bff',1.14,0.9],clouds:true},
+  {id:'mars',R:78,r:2.2,tilt:25,rot:24.6,P:687,phase:5.2,atmo:['#d98a5a',1.1,0.25]},
+  {id:'jupiter',R:150,r:8,tilt:3,rot:9.9,P:4333,phase:1.0,focusK:5.2},
+  {id:'saturn',R:196,r:6.8,tilt:26.7,rot:10.6,P:10759,phase:3.3,rings:{inn:1.3,out:2.4,kind:'saturn'},focusK:7.4},
+  {id:'uranus',R:236,r:4.4,tilt:97.8,rot:-17.2,P:30687,phase:5.9,atmo:['#9fe3ea',1.12,0.45],rings:{inn:1.7,out:2.0,kind:'uranus'},focusK:6},
+  {id:'neptune',R:272,r:4.2,tilt:28,rot:16.1,P:60190,phase:2.6,atmo:['#4a6fff',1.12,0.6]}
+];
+const MOONS=[
+  {id:'moon',of:'earth',d:8,r:0.8,P:27.3,inc:5,plane:'ecliptic',ph:1},
+  {id:'phobos',of:'mars',d:4.0,r:0.26,P:0.32,inc:1,plane:'equator',ph:0.5,stretch:[1.3,0.95,0.85]},
+  {id:'deimos',of:'mars',d:5.6,r:0.2,P:1.26,inc:2,plane:'equator',ph:3},
+  {id:'io',of:'jupiter',d:14,r:1.0,P:1.77,inc:0.5,plane:'equator',ph:0.2},
+  {id:'europa',of:'jupiter',d:18,r:0.9,P:3.55,inc:0.5,plane:'equator',ph:2.4},
+  {id:'ganymede',of:'jupiter',d:23.5,r:1.4,P:7.15,inc:0.3,plane:'equator',ph:4.1},
+  {id:'callisto',of:'jupiter',d:30,r:1.3,P:16.7,inc:0.3,plane:'equator',ph:5.5},
+  {id:'enceladus',of:'saturn',d:19,r:0.45,P:1.37,inc:0,plane:'equator',ph:1.7},
+  {id:'rhea',of:'saturn',d:24,r:0.7,P:4.5,inc:0,plane:'equator',ph:3.6},
+  {id:'titan',of:'saturn',d:32,r:1.5,P:15.9,inc:0,plane:'equator',ph:5.0},
+  {id:'miranda',of:'uranus',d:10.5,r:0.4,P:1.41,inc:0,plane:'equator',ph:0.9},
+  {id:'titania',of:'uranus',d:14,r:0.8,P:8.7,inc:0,plane:'equator',ph:2.8},
+  {id:'oberon',of:'uranus',d:18,r:0.75,P:13.5,inc:0,plane:'equator',ph:4.6},
+  {id:'triton',of:'neptune',d:11,r:0.9,P:-5.88,inc:25,plane:'ecliptic',ph:1.3}
+];
+const pickables=[],bodies={};
+
+/* ปรับความเร็วโคจรให้ดูได้จริง: เร็วตามอันดับ แต่ย่อสัดส่วนไม่ให้ดาวไกลๆ ช้าเกินไป */
+const orbW=P=>Math.sign(P)*3.69/Math.sqrt(Math.abs(P));
+const moonW=P=>Math.sign(P)*Math.min(2.2,1.6/Math.pow(Math.abs(P),0.75));
+
+function glowTex(){
+  const c=document.createElement('canvas');c.width=c.height=256;const g=c.getContext('2d');
+  const gr=g.createRadialGradient(128,128,0,128,128,128);
+  gr.addColorStop(0,'rgba(255,236,170,1)');gr.addColorStop(0.22,'rgba(255,176,64,.6)');
+  gr.addColorStop(0.55,'rgba(255,112,22,.14)');gr.addColorStop(1,'rgba(255,90,0,0)');
+  g.fillStyle=gr;g.fillRect(0,0,256,256);return new THREE.CanvasTexture(c);
+}
+function atmo(color,r,k){
+  const m=new THREE.ShaderMaterial({
+    uniforms:{c:{value:new THREE.Color(color)},k:{value:k}},
+    vertexShader:'varying vec3 vN;void main(){vN=normalize(normalMatrix*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
+    fragmentShader:'varying vec3 vN;uniform vec3 c;uniform float k;void main(){float i=pow(max(0.0,0.72-dot(vN,vec3(0.0,0.0,1.0))),3.0)*k;gl_FragColor=vec4(c*i,1.0);}',
+    side:THREE.BackSide,blending:THREE.AdditiveBlending,transparent:true,depthWrite:false
+  });
+  return new THREE.Mesh(new THREE.SphereGeometry(r,48,32),m);
+}
+function circle(R,inc,color,op){
+  const pts=[],seg=256;
+  for(let i=0;i<seg;i++){const a=i/seg*Math.PI*2;pts.push(new THREE.Vector3(Math.cos(a)*R,Math.sin(a)*R*Math.sin(inc),Math.sin(a)*R*Math.cos(inc)));}
+  return new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color,transparent:true,opacity:op,depthWrite:false}));
+}
+function ringGeo(inn,out){
+  const g=new THREE.RingGeometry(inn,out,128,1),pos=g.attributes.position,uv=g.attributes.uv,v=new THREE.Vector3();
+  for(let i=0;i<pos.count;i++){v.fromBufferAttribute(pos,i);uv.setXY(i,(v.length()-inn)/(out-inn),0.5);}
+  return g;
+}
+function addProxy(b){
+  const p=new THREE.Mesh(new THREE.SphereGeometry(b.r,8,6),new THREE.MeshBasicMaterial({visible:false}));
+  p.userData.id=b.id;p.userData.active=b.kind==='moon'?()=>b.group.visible:()=>true;
+  b.group.add(p);b.proxy=p;pickables.push(p);
+}
+const orbitLines=[],moonLines=[];
+
+async function build(){
+  const TEX={};
+  const keys=Object.keys(TEXGEN);
+  const bar=document.getElementById('barFill');
+  for(let i=0;i<keys.length;i++){
+    TEX[keys[i]]=TEXGEN[keys[i]]();
+    bar.style.width=Math.round((i+1)/keys.length*100)+'%';
+    await new Promise(r=>setTimeout(r,0));
+  }
+  TEX.ringSaturn=ringTex('saturn');TEX.ringUranus=ringTex('uranus');
+
+  /* ท้องฟ้า */
+  const sky=new THREE.Mesh(new THREE.SphereGeometry(4500,48,32),new THREE.MeshBasicMaterial({map:TEX.sky,side:THREE.BackSide,depthWrite:false,fog:false}));
+  scene.add(sky);
+  const starGeo=(n,rMin)=>{
+    const pos=new Float32Array(n*3),col=new Float32Array(n*3);
+    for(let i=0;i<n;i++){
+      const u=Math.random()*2-1,t=Math.random()*Math.PI*2,s=Math.sqrt(1-u*u),r=rMin+Math.random()*300;
+      pos[i*3]=r*s*Math.cos(t);pos[i*3+1]=r*u;pos[i*3+2]=r*s*Math.sin(t);
+      const b=0.35+Math.random()*0.65,w=Math.random();
+      col[i*3]=b*(0.8+0.2*w);col[i*3+1]=b*(0.85+0.1*w);col[i*3+2]=b*(1-0.25*w);
+    }
+    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));g.setAttribute('color',new THREE.BufferAttribute(col,3));return g;
+  };
+  scene.add(new THREE.Points(starGeo(7000,3600),new THREE.PointsMaterial({size:1.6,sizeAttenuation:false,vertexColors:true,transparent:true,opacity:.9,depthWrite:false})));
+  scene.add(new THREE.Points(starGeo(260,3600),new THREE.PointsMaterial({size:3,sizeAttenuation:false,vertexColors:true,transparent:true,opacity:1,depthWrite:false})));
+
+  /* แสง */
+  scene.add(new THREE.AmbientLight(0x1b2233,1));
+  scene.add(new THREE.PointLight(0xfff2e0,1.35,0));
+
+  /* ดวงอาทิตย์ */
+  {
+    const g=new THREE.Group();
+    const mesh=new THREE.Mesh(new THREE.SphereGeometry(12,64,48),new THREE.MeshBasicMaterial({map:TEX.sun}));
+    g.add(mesh);g.add(atmo('#ff8a1e',16.2,1.3));
+    const gt=glowTex();
+    const s1=new THREE.Sprite(new THREE.SpriteMaterial({map:gt,blending:THREE.AdditiveBlending,transparent:true,depthWrite:false}));s1.scale.set(110,110,1);g.add(s1);
+    const s2=new THREE.Sprite(new THREE.SpriteMaterial({map:gt,blending:THREE.AdditiveBlending,transparent:true,depthWrite:false,opacity:.3}));s2.scale.set(300,300,1);g.add(s2);
+    scene.add(g);
+    const b={id:'sun',kind:'sun',group:g,mesh,r:12,minR:22,maxR:900,focusR:72,wp:new THREE.Vector3()};
+    bodies.sun=b;addProxy(b);
+  }
+
+  /* ดาวเคราะห์ */
+  PLANETS.forEach(def=>{
+    const group=new THREE.Group(),tilt=new THREE.Group();
+    tilt.rotation.z=rad(def.tilt);group.add(tilt);
+    const mesh=new THREE.Mesh(new THREE.SphereGeometry(def.r,64,48),new THREE.MeshStandardMaterial({map:TEX[def.id],roughness:0.92,metalness:0}));
+    tilt.add(mesh);
+    let clouds=null;
+    if(def.clouds){
+      clouds=new THREE.Mesh(new THREE.SphereGeometry(def.r*1.012,64,48),new THREE.MeshStandardMaterial({map:TEX.earthClouds,transparent:true,roughness:1,depthWrite:false}));
+      tilt.add(clouds);
+    }
+    if(def.atmo)group.add(atmo(def.atmo[0],def.r*def.atmo[1],def.atmo[2]));
+    if(def.rings){
+      const rm=new THREE.Mesh(ringGeo(def.r*def.rings.inn,def.r*def.rings.out),new THREE.MeshStandardMaterial({map:def.rings.kind==='saturn'?TEX.ringSaturn:TEX.ringUranus,transparent:true,side:THREE.DoubleSide,roughness:1,alphaTest:0.02}));
+      rm.rotation.x=-Math.PI/2;tilt.add(rm);
+    }
+    scene.add(group);
+    const b={id:def.id,kind:'planet',def,group,tilt,mesh,clouds,r:def.r,a:def.phase,w:orbW(def.P),
+      spin:Math.sign(def.rot)*0.5/Math.sqrt(Math.abs(def.rot)/10),
+      minR:def.r*(def.rings?3.2:1.8),maxR:def.R*4+400,focusR:def.r*(def.focusK||4.8),
+      moonShow:Math.max(110,def.r*32),wp:new THREE.Vector3()};
+    bodies[def.id]=b;addProxy(b);
+    const line=circle(def.R,0,0x8f9bbd,0.22);line.userData.pid=def.id;scene.add(line);orbitLines.push(line);
+  });
+
+  /* ดวงจันทร์ */
+  MOONS.forEach(def=>{
+    const parent=bodies[def.of];
+    const container=def.plane==='ecliptic'?parent.group:parent.tilt;
+    const group=new THREE.Group();
+    const mesh=new THREE.Mesh(new THREE.SphereGeometry(def.r,32,24),new THREE.MeshStandardMaterial({map:TEX[def.id],roughness:0.95,metalness:0}));
+    if(def.stretch)mesh.scale.set(def.stretch[0],def.stretch[1],def.stretch[2]);
+    group.add(mesh);container.add(group);
+    const inc=rad(def.inc);
+    const b={id:def.id,kind:'moon',def,parentId:def.of,group,mesh,r:def.r,a:def.ph,w:moonW(def.P),inc,
+      minR:Math.max(2.4,def.r*2.6),maxR:200,focusR:Math.max(5,def.r*6),wp:new THREE.Vector3()};
+    bodies[def.id]=b;addProxy(b);
+    const line=circle(def.d,inc,0x9fb0d8,0.28);container.add(line);line.visible=false;line.userData.of=def.of;moonLines.push(line);
+  });
+
+  /* แถบดาวเคราะห์น้อย + ซีรีส */
+  {
+    const beltGroup=new THREE.Group();scene.add(beltGroup);
+    const N=2000,im=new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1,0),new THREE.MeshStandardMaterial({roughness:1,flatShading:true}),N);
+    const m4=new THREE.Matrix4(),q=new THREE.Quaternion(),e=new THREE.Euler(),sc=new THREE.Vector3(),ps=new THREE.Vector3(),col=new THREE.Color();
+    for(let i=0;i<N;i++){
+      const a=Math.random()*Math.PI*2,r=96+Math.random()*28+(Math.random()-0.5)*6,y=(Math.random()+Math.random()+Math.random()-1.5)*5;
+      ps.set(Math.cos(a)*r,y,Math.sin(a)*r);
+      e.set(Math.random()*6,Math.random()*6,Math.random()*6);q.setFromEuler(e);
+      const s=0.25+Math.pow(Math.random(),3)*0.9;sc.set(s,s*(0.7+Math.random()*0.3),s*(0.7+Math.random()*0.3));
+      m4.compose(ps,q,sc);im.setMatrixAt(i,m4);
+      const g=0.32+Math.random()*0.4;col.setRGB(g*1.05,g*0.97,g*0.88);im.setColorAt(i,col);
+    }
+    beltGroup.add(im);
+    const proxy=new THREE.Mesh(new THREE.TorusGeometry(110,16,6,48),new THREE.MeshBasicMaterial({visible:false}));
+    proxy.rotation.x=Math.PI/2;proxy.userData.id='belt';proxy.userData.active=()=>true;scene.add(proxy);pickables.push(proxy);
+    bodies.belt={id:'belt',kind:'belt',group:beltGroup,r:110,minR:120,maxR:1200,focusR:360,wp:new THREE.Vector3(),w:orbW(1700)};
+    const cg=new THREE.Group(),cm=new THREE.Mesh(new THREE.SphereGeometry(1.4,40,30),new THREE.MeshStandardMaterial({map:TEX.ceres,roughness:0.95}));
+    cg.add(cm);scene.add(cg);
+    const cb={id:'ceres',kind:'ceres',group:cg,mesh:cm,r:1.4,a:1.2,w:orbW(1682),R:108,minR:3.4,maxR:300,focusR:9,wp:new THREE.Vector3()};
+    bodies.ceres=cb;addProxy(cb);
+    orbitLines.push((()=>{const l=circle(108,0,0x8f9bbd,0.12);scene.add(l);return l;})());
+  }
+}
+
+/* ============ กล้อง ============ */
+const clock=new THREE.Clock();
+const ctl={
+  target:new THREE.Vector3(),offset:new THREE.Vector3(),focus:null,
+  th:0.7,ph:1.0,r:1700,thG:0.7,phG:1.05,rG:600,minR:80,maxR:1800,shiftX:0,shiftY:0,shiftXG:0,shiftYG:0,
+  setFocus(b){this.focus=b;this.offset.copy(this.target).sub(b?b.wp:ZERO);},
+  update(dt){
+    const base=this.focus?this.focus.wp:ZERO;
+    this.offset.multiplyScalar(Math.exp(-dt*3));this.target.copy(base).add(this.offset);
+    const k=1-Math.exp(-dt*4.5);
+    this.th+=(this.thG-this.th)*k;this.ph+=(this.phG-this.ph)*k;
+    this.r=Math.exp(Math.log(this.r)+(Math.log(this.rG)-Math.log(this.r))*k);
+    const sp=Math.sin(this.ph);
+    camera.position.set(this.target.x+this.r*sp*Math.cos(this.th),this.target.y+this.r*Math.cos(this.ph),this.target.z+this.r*sp*Math.sin(this.th));
+    camera.lookAt(this.target);
+    this.shiftX+=(this.shiftXG-this.shiftX)*k;this.shiftY+=(this.shiftYG-this.shiftY)*k;
+    if(Math.abs(this.shiftX)>0.5||Math.abs(this.shiftY)>0.5)camera.setViewOffset(W,H,this.shiftX,this.shiftY,W,H);
+    else if(camera.view&&camera.view.enabled)camera.clearViewOffset();
+  }
+};
+function zoom(f){ctl.rG=clamp(ctl.rG*f,ctl.minR,ctl.maxR);}
+function overviewR(){const a=W/H;return clamp(a<1?560/a*0.8:560,560,1700);}
+
+/* ============ แผงข้อมูลและเมนู ============ */
+const panel=document.getElementById('panel');
+const chipsEl=document.getElementById('chips');
+const labelsEl=document.getElementById('labels');
+const hintEl=document.getElementById('hint');
+let panelId=null,selected=null,showOrbits=true,showLabels=true,paused=false,speed=1;
+let hlSet=new Set(),grpSel=null,metric='diam',sortDesc=false;
+const menubarEl=document.getElementById('menubar');
+
+const RAIL=[['sun'],['mercury','venus','earth','mars'],['belt'],['jupiter','saturn','uranus','neptune']];
+RAIL.forEach((grp,gi)=>{
+  if(gi){const s=document.createElement('span');s.className='sep';s.setAttribute('aria-hidden','true');chipsEl.appendChild(s);}
+  grp.forEach(id=>{
+    const b=document.createElement('button');b.type='button';b.className='chip';b.dataset.go=id;
+    b.innerHTML='<i style="background:'+DATA[id].color+'"></i>'+DATA[id].name;
+    chipsEl.appendChild(b);
+  });
+});
+
+const XICON='<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+function chipBtn(id){return '<button type="button" class="chip" data-go="'+id+'"><i style="background:'+DATA[id].color+'"></i>'+DATA[id].name+'</button>';}
+function moonCountText(n){return n===0?'ไม่มี':n.toLocaleString('th-TH')+' ดวง';}
+function panelHTML(id){
+  const d=DATA[id],b=bodies[id];
+  let h='<button type="button" class="close" aria-label="ปิดข้อมูล">'+XICON+'</button>';
+  h+='<h2>'+d.name+'</h2><p class="kind"><i style="background:'+d.color+'"></i>'+d.kind+'</p><p class="lead">'+d.lead+'</p>';
+  const rows=d.stats.slice();
+  if(typeof d.moonCount==='number'&&b.kind==='planet')rows.push(['ดวงจันทร์บริวาร',moonCountText(d.moonCount)]);
+  h+='<dl class="stats">'+rows.map(r=>'<div class="row"><dt>'+r[0]+'</dt><dd>'+r[1]+'</dd></div>').join('')+'</dl>';
+  if(d.facts&&d.facts.length)h+='<h3>เรื่องน่ารู้</h3><ul class="facts">'+d.facts.map(f=>'<li>'+f+'</li>').join('')+'</ul>';
+  let rel=[],title='';
+  if(b.kind==='planet'){rel=MOONS.filter(m=>m.of===id).map(m=>m.id);title='ดวงจันทร์เด่นที่แสดงในภาพ';}
+  else if(b.kind==='moon'){rel=[b.parentId];title='ดาวแม่';}
+  else if(b.kind==='belt'){rel=['ceres'];title='วัตถุเด่นในแถบ';}
+  else if(b.kind==='ceres'){rel=['belt'];title='อยู่ใน';}
+  if(rel.length){
+    h+='<h3>'+title+'</h3><div class="chips">'+rel.map(chipBtn).join('')+'</div>';
+    if(b.kind==='planet'&&d.moonCount>rel.length)h+='<p class="note">ดวงจันทร์ที่รู้จักทั้งหมด '+d.moonCount.toLocaleString('th-TH')+' ดวง ในภาพแสดงเฉพาะดวงที่เด่นที่สุด</p>';
+  }
+  h+='<p class="note">ขนาดและระยะทางในภาพถูกย่อส่วนเพื่อให้ดูง่าย ไม่ใช่มาตราส่วนจริง</p>';
+  return h;
+}
+function overviewHTML(){
+  const planets=PLANETS.map(p=>p.id).sort((a,b)=>DATA[b].moonCount-DATA[a].moonCount);
+  const max=Math.max.apply(null,planets.map(id=>DATA[id].moonCount));
+  let h='<button type="button" class="close" aria-label="ปิดข้อมูล">'+XICON+'</button>';
+  h+='<h2>ระบบสุริยะ</h2><p class="kind"><i style="background:#ffb347"></i>ดวงอาทิตย์ 1 ดวง ดาวเคราะห์ 8 ดวง</p><p class="lead">'+OVERVIEW.lead+'</p>';
+  h+='<h3>ดาวดวงไหนมีดวงจันทร์เยอะ</h3>';
+  h+=planets.map(id=>'<button type="button" class="rank" data-go="'+id+'"><span>'+DATA[id].name+'</span><span class="bar"><i style="width:'+(DATA[id].moonCount?Math.max(3,Math.sqrt(DATA[id].moonCount/max)*100):0)+'%"></i></span><b>'+DATA[id].moonCount+'</b></button>').join('');
+  h+='<p class="note">แถบความยาวเทียบแบบย่อสัดส่วน '+OVERVIEW.moonNote+'</p>';
+  h+='<p class="note">พื้นผิวดาวในหน้านี้สร้างจำลองด้วยโค้ด ไม่ใช่ภาพถ่ายจริง และขนาดกับระยะทางถูกย่อส่วน</p>';
+  return h;
+}
+/* ============ เนื้อหาของแถบเมนู ============ */
+const GROUPS=[
+  {id:'inner',title:'ดาวเคราะห์วงใน',by:'แบ่งตามคาบการโคจร',desc:'ดาวเคราะห์ที่อยู่ใกล้ดวงอาทิตย์มากกว่าโลก จึงมีคาบการโคจรสั้นกว่าโลก',ids:['mercury','venus']},
+  {id:'outer',title:'ดาวเคราะห์วงนอก',by:'แบ่งตามคาบการโคจร',desc:'ดาวเคราะห์ที่อยู่ห่างจากดวงอาทิตย์มากกว่าโลก จึงมีคาบการโคจรยาวกว่าโลก',ids:['mars','jupiter','saturn','uranus','neptune']},
+  {id:'rock',title:'ดาวเคราะห์หิน',by:'แบ่งตามลักษณะพื้นผิว',desc:'ดาวเคราะห์ที่มีพื้นผิวแข็งเป็นหิน และยังมีชั้นบรรยากาศบางๆ ห่อหุ้ม',ids:['mercury','venus','earth','mars']},
+  {id:'gas',title:'ดาวเคราะห์แก๊ส',by:'แบ่งตามลักษณะพื้นผิว',desc:'ดาวเคราะห์ที่เป็นแก๊สทั่วทั้งดวง อาจมีแกนหินขนาดเล็กอยู่ภายใน',ids:['jupiter','saturn','uranus','neptune']},
+  {id:'ring',title:'ดาวเคราะห์ที่มีวงแหวน',by:'เกร็ดวิทย์',desc:'ในระบบสุริยะมีดาวเคราะห์ที่มีวงแหวน 4 ดวง แต่ถ้ามองจากโลกโดยใช้กล้องโทรทรรศน์ จะมองเห็นวงแหวนของดาวเสาร์เพียงดวงเดียว',ids:['jupiter','saturn','uranus','neptune'],note:'ภาพจำลองนี้วาดวงแหวนเฉพาะดาวเสาร์และดาวยูเรนัส'}
+];
+/* ตัวเลขสำหรับกราฟเปรียบเทียบ ให้ตรงกับข้อมูลใน DATA ด้านบน (เรียงตามระยะห่างจากดวงอาทิตย์) */
+const COMPARE=[
+  {id:'mercury',diam:4879,diamTxt:'4,879 กม.',dist:57.91,distTxt:'57.91 ล้าน กม.',orbit:87.97,orbitTxt:'87.97 วัน',rot:1407.6,rotTxt:'58.65 วัน',temp:[-180,430],tempTxt:'−180 ถึง 430 °C',moons:0},
+  {id:'venus',diam:12104,diamTxt:'12,104 กม.',dist:108.21,distTxt:'108.21 ล้าน กม.',orbit:224.70,orbitTxt:'224.70 วัน',rot:5832,rotTxt:'243 วัน',temp:[470,470],tempTxt:'ประมาณ 470 °C',moons:0},
+  {id:'earth',diam:12742,diamTxt:'12,742 กม. *',dist:149.60,distTxt:'149.60 ล้าน กม.',orbit:365.26,orbitTxt:'365.26 วัน',rot:23.93,rotTxt:'23 ชม. 56 นาที',temp:[15,15],tempTxt:'15 °C',moons:1},
+  {id:'mars',diam:6792,diamTxt:'6,792 กม.',dist:227.94,distTxt:'227.94 ล้าน กม.',orbit:687,orbitTxt:'687 วัน',rot:24.62,rotTxt:'24.62 ชม.',temp:[-87,-5],tempTxt:'−87 ถึง −5 °C',moons:2},
+  {id:'jupiter',diam:142980,diamTxt:'142,980 กม.',dist:778.41,distTxt:'778.41 ล้าน กม.',orbit:4332,orbitTxt:'11.86 ปี',rot:9.92,rotTxt:'9.92 ชม.',temp:[-148,-148],tempTxt:'ประมาณ −148 °C',moons:62},
+  {id:'saturn',diam:120540,diamTxt:'120,540 กม.',dist:1427,distTxt:'1,427 ล้าน กม.',orbit:10764,orbitTxt:'29.47 ปี',rot:10.66,rotTxt:'10.66 ชม.',temp:[-178,-178],tempTxt:'ประมาณ −178 °C',moons:62},
+  {id:'uranus',diam:51120,diamTxt:'51,120 กม.',dist:2870,distTxt:'2,870 ล้าน กม.',orbit:29221,orbitTxt:'80 ปี',rot:17.24,rotTxt:'17.24 ชม.',temp:[-216,-216],tempTxt:'ประมาณ −216 °C',moons:27},
+  {id:'neptune',diam:49530,diamTxt:'49,530 กม.',dist:4498,distTxt:'4,498 ล้าน กม.',orbit:60193,orbitTxt:'164.80 ปี',rot:16.11,rotTxt:'16.11 ชม.',temp:[-214,-214],tempTxt:'ประมาณ −214 °C',moons:13}
+];
+const METRICS=[
+  {k:'diam',label:'ขนาด',title:'เส้นผ่านศูนย์กลาง',key:r=>r.diam,txt:r=>r.diamTxt},
+  {k:'dist',label:'ระยะจากดวงอาทิตย์',title:'ระยะห่างจากดวงอาทิตย์เฉลี่ย',key:r=>r.dist,txt:r=>r.distTxt},
+  {k:'orbit',label:'เวลาโคจร',title:'เวลาโคจรรอบดวงอาทิตย์ 1 รอบ',key:r=>r.orbit,txt:r=>r.orbitTxt},
+  {k:'rot',label:'เวลาหมุนรอบตัวเอง',title:'เวลาหมุนรอบตัวเอง 1 รอบ',key:r=>r.rot,txt:r=>r.rotTxt},
+  {k:'temp',label:'อุณหภูมิ',title:'อุณหภูมิพื้นผิวเฉลี่ย',key:r=>(r.temp[0]+r.temp[1])/2,txt:r=>r.tempTxt},
+  {k:'moons',label:'ดวงจันทร์',title:'จำนวนดวงจันทร์บริวารที่ค้นพบแล้ว',key:r=>r.moons,txt:r=>r.moons?r.moons+' ดวง':'ไม่มี'}
+];
+const MENU_IDS=['m-parts','m-groups','m-compare','m-others','m-help'];
+function menuHead(title,kind){return '<button type="button" class="close" aria-label="ปิดข้อมูล">'+XICON+'</button><h2>'+title+'</h2><p class="kind">'+kind+'</p>';}
+function partsHTML(){
+  let h=menuHead('องค์ประกอบของระบบสุริยะ','ระบบของดวงดาวในดาราจักรทางช้างเผือก');
+  h+='<p class="lead">ระบบสุริยะเป็นระบบของดวงดาวที่ตั้งอยู่ในดาราจักรทางช้างเผือก ซึ่งเป็นดาราจักรหนึ่งในเอกภพ มีดวงอาทิตย์เป็นศูนย์กลาง และมีดาวบริวารโคจรอยู่โดยรอบ</p>';
+  h+='<h3>ศูนย์กลาง</h3><div class="chips">'+chipBtn('sun')+'</div>';
+  h+='<h3>ดาวเคราะห์ 8 ดวง เรียงจากใกล้ไปไกลดวงอาทิตย์</h3><ol class="seq">'+PLANETS.map(p=>'<li>'+chipBtn(p.id)+'</li>').join('')+'</ol>';
+  h+='<h3>ดวงจันทร์บริวารของดาวเคราะห์</h3><div class="chips">'+MOONS.map(m=>chipBtn(m.id)).join('')+'</div>';
+  h+='<h3>ดาวเคราะห์แคระและดาวเคราะห์น้อย</h3><div class="chips">'+chipBtn('ceres')+chipBtn('belt')+'</div>';
+  h+='<h3>ดาวหางและวัตถุขนาดเล็กอื่นๆ</h3><div class="chips"><button type="button" class="chip" data-menu="m-others">อ่านที่เมนู วัตถุท้องฟ้าอื่นๆ</button></div>';
+  return h;
+}
+function groupsHTML(){
+  let h=menuHead('จัดกลุ่มดาวเคราะห์','นักดาราศาสตร์แบ่งดาวเคราะห์ตามคาบการโคจร และตามลักษณะพื้นผิว');
+  h+='<p class="lead">แตะชื่อกลุ่มเพื่อให้ดาวในกลุ่มนั้นเด่นขึ้นในภาพ แตะอีกครั้งเพื่อยกเลิก</p>';
+  let last='';
+  GROUPS.forEach(g=>{
+    if(g.by!==last){h+='<h3>'+g.by+'</h3>';last=g.by;}
+    h+='<div class="grp-block"><button type="button" class="grp" data-grp="'+g.id+'" aria-pressed="'+(grpSel===g.id)+'"><span>'+g.title+'</span><em>'+g.ids.length+' ดวง</em></button><p class="note">'+g.desc+'</p>'+(g.note?'<p class="note">'+g.note+'</p>':'')+'<div class="chips">'+g.ids.map(chipBtn).join('')+'</div></div>';
+  });
+  return h;
+}
+function compareHTML(){
+  const m=METRICS.find(x=>x.k===metric),rows=COMPARE.slice();
+  if(sortDesc)rows.sort((a,b)=>m.key(b)-m.key(a));
+  const TMIN=-230,TMAX=490,max=Math.max.apply(null,rows.map(m.key));
+  let h=menuHead('เปรียบเทียบดาวเคราะห์','ตัวเลขจากหนังสือเรียน');
+  h+='<p class="lead">เลือกหัวข้อที่อยากเทียบ แล้วดูว่าดาวแต่ละดวงต่างกันแค่ไหน แตะแถวเพื่อไปที่ดาวนั้น</p>';
+  h+='<div class="chips">'+METRICS.map(x=>'<button type="button" class="chip" data-metric="'+x.k+'" aria-pressed="'+(x.k===metric)+'">'+x.label+'</button>').join('')+'</div>';
+  h+='<h3>'+m.title+'</h3><div class="cmp-list">';
+  rows.forEach(r=>{
+    let bar;
+    if(m.k==='temp'){const lo=r.temp[0],hi=r.temp[1];bar='left:'+((lo-TMIN)/(TMAX-TMIN)*100).toFixed(2)+'%;width:'+Math.max(1.6,(hi-lo)/(TMAX-TMIN)*100).toFixed(2)+'%';}
+    else{const v=m.key(r);bar='left:0;width:'+(v>0?Math.max(1.5,v/max*100):0).toFixed(2)+'%';}
+    h+='<button type="button" class="cmp" data-go="'+r.id+'"><span class="top"><span class="nm"><i style="background:'+DATA[r.id].color+'"></i>'+DATA[r.id].name+'</span><b>'+m.txt(r)+'</b></span><span class="trk"><i style="'+bar+'"></i></span></button>';
+  });
+  h+='</div><div class="chips" style="margin-top:14px"><button type="button" class="chip" data-sort aria-pressed="'+sortDesc+'">เรียงจากค่ามากไปน้อย</button></div>';
+  if(m.k==='temp')h+='<p class="note">แถบลอยแสดงช่วงอุณหภูมิตั้งแต่ต่ำสุดถึงสูงสุด ดาวที่มีค่าเดียวแสดงเป็นขีดสั้นๆ</p>';
+  else h+='<p class="note">ความยาวแถบเทียบกันแบบเส้นตรง ดาวที่มีค่าน้อยมากจึงเห็นแถบสั้นมาก</p>';
+  if(m.k==='diam')h+='<p class="note">* ค่าเส้นผ่านศูนย์กลางของโลกไม่ปรากฏในหนังสือเรียน เป็นค่าทั่วไปที่เพิ่มเข้ามาเพื่อให้เปรียบเทียบได้ครบ</p>';
+  return h;
+}
+function othersHTML(){
+  const sec=(t,body,open)=>'<details class="sec"'+(open?' open':'')+'><summary>'+t+'</summary>'+body+'</details>';
+  let h=menuHead('วัตถุท้องฟ้าอื่นๆ','นอกจากดวงอาทิตย์ ดาวเคราะห์ และดวงจันทร์บริวาร');
+  h+='<p class="lead">ระบบสุริยะยังมีวัตถุท้องฟ้าอื่นที่ควรเรียนรู้อีก ได้แก่ ดาวเคราะห์แคระ ดาวเคราะห์น้อย และดาวหาง</p>';
+  h+=sec('ดาวเคราะห์แคระ','<p>เป็นวัตถุที่มีวงโคจรรอบดวงอาทิตย์ มีมวลมากพอที่จะทำให้เกิดแรงดึงดูดจนวัตถุมีขนาดเกือบทรงกลม มีวงโคจรซ้อนทับหรือใกล้เคียงกับวัตถุอื่น และเป็นดาวที่ไม่เป็นบริวารของดาวเคราะห์ดวงอื่น</p><p>ดาวเคราะห์มีสมบัติเหมือนดาวเคราะห์แคระ แต่แตกต่างกันที่ดาวเคราะห์ไม่มีวงโคจรซ้อนทับหรือใกล้เคียงกับวัตถุอื่น</p><p>ปัจจุบันมีวัตถุท้องฟ้าที่ถูกจัดว่าเป็นดาวเคราะห์แคระ เช่น ซีรีส อีริส เฮาเมอา มาคีมาคี เป็นต้น</p><div class="chips">'+chipBtn('ceres')+'</div>',true);
+  h+=sec('ดาวเคราะห์น้อย','<p>เป็นวัตถุขนาดเล็กๆ จำนวนมากที่อยู่ในระบบสุริยะ มีขนาดเท่าเม็ดฝุ่นจนถึงขนาดใหญ่ที่มีเส้นผ่านศูนย์กลางเกือบพันกิโลเมตร ประกอบด้วยหินและโลหะ ซึ่งเกาะกันเป็นวงแหวนอยู่ระหว่างดาวอังคารและดาวพฤหัสบดี และอยู่ห่างจากโลกประมาณ 150 ถึง 354 ล้านกิโลเมตร</p><p>ดาวเคราะห์น้อยจัดเป็นบริวารของดวงอาทิตย์และโคจรรอบดวงอาทิตย์ เช่นเดียวกับดาวดวงอื่นๆ</p><div class="chips">'+chipBtn('belt')+'</div>');
+  h+=sec('ดาวหาง','<p>เป็นวัตถุท้องฟ้าที่ไม่มีแสงในตัวเอง และโคจรรอบดวงอาทิตย์เป็นรูปวงรี ประกอบด้วยน้ำและแก๊สที่เย็นจัดรวมตัวเป็นก้อนแข็งและของแข็ง นักดาราศาสตร์จัดรวมดาวหางไว้เป็นส่วนหนึ่งของระบบสุริยะ เพราะโคจรรอบดวงอาทิตย์ จึงจัดเป็นบริวารของดวงอาทิตย์</p><p>เมื่ออยู่ไกลจากดวงอาทิตย์ จะดูคล้ายก้อนน้ำแข็งสกปรก มีหินและฝุ่นเกาะกันเป็นส่วนประกอบ เมื่อเริ่มเคลื่อนเข้าใกล้ดวงอาทิตย์ น้ำแข็งรอบนอกจะระเหิดกลายเป็นแก๊สและฝุ่น ทำให้เห็นเป็นหางของดาวหาง ซึ่งชี้ไปในทิศทางตรงกันข้ามกับดวงอาทิตย์</p>');
+  return h;
+}
+function helpHTML(){
+  let h=menuHead('วิธีใช้','การเรียนรู้ผ่านแบบจำลองสามมิติ');
+  h+='<h3>ควบคุมมุมมอง</h3><ul class="facts"><li>ลากด้วยเมาส์หรือนิ้ว เพื่อหมุนมุมมอง</li><li>เลื่อนล้อเมาส์ หรือใช้สองนิ้วบีบ เพื่อซูมเข้าออก</li><li>แตะที่ดาวในภาพ หรือเลือกชื่อดาวจากแถบด้านบน เพื่อซูมเข้าไปอ่านข้อมูล</li><li>กดปุ่ม Esc หรือปุ่มกากบาท เพื่อปิดแผงข้อมูลและกลับมาดูภาพรวม</li></ul>';
+  h+='<h3>แถบเมนู</h3><ul class="facts"><li>องค์ประกอบ: สมาชิกทั้งหมดของระบบสุริยะ</li><li>จัดกลุ่มดาวเคราะห์: วงใน วงนอก ดาวเคราะห์หิน ดาวเคราะห์แก๊ส และดาวที่มีวงแหวน</li><li>เปรียบเทียบดาว: เทียบขนาด ระยะทาง เวลาโคจร เวลาหมุน อุณหภูมิ และจำนวนดวงจันทร์</li><li>วัตถุท้องฟ้าอื่นๆ: ดาวเคราะห์แคระ ดาวเคราะห์น้อย และดาวหาง</li></ul>';
+  h+='<h3>ปุ่มด้านล่างซ้าย</h3><ul class="facts"><li>หยุด หรือเล่น การเคลื่อนที่ของดาว</li><li>เลื่อนแถบความเร็ว เพื่อให้ดาวโคจรช้าลงหรือเร็วขึ้น</li><li>เปิดหรือปิดเส้นวงโคจร และชื่อดาว</li></ul>';
+  h+='<h3>แหล่งข้อมูล</h3><p class="note">ข้อมูลในแผงของดวงอาทิตย์ ดาวเคราะห์ ซีรีส และแถบดาวเคราะห์น้อย อ้างอิงจากหนังสือเรียนหน่วยการเรียนรู้ที่ 4 ระบบสุริยะและการปรากฏของดวงจันทร์ ส่วนแผงของดวงจันทร์บริวารเป็นข้อมูลเสริมที่ไม่ได้อยู่ในหนังสือ</p><p class="note">พื้นผิวดาวในภาพสร้างจำลองด้วยโค้ด ไม่ใช่ภาพถ่ายจริง และขนาดกับระยะทางถูกย่อส่วน</p>';
+  return h;
+}
+function menuHTML(id){
+  return id==='m-parts'?partsHTML():id==='m-groups'?groupsHTML():id==='m-compare'?compareHTML():id==='m-others'?othersHTML():helpHTML();
+}
+function renderMenu(){
+  if(!panelId||panelId.indexOf('m-')!==0)return;
+  const a=document.activeElement;let sel=null;
+  if(a&&panel.contains(a)){
+    if(a.dataset.grp)sel='[data-grp="'+a.dataset.grp+'"]';
+    else if(a.dataset.metric)sel='[data-metric="'+a.dataset.metric+'"]';
+    else if(a.hasAttribute('data-sort'))sel='[data-sort]';
+  }
+  const st=panel.scrollTop;panel.innerHTML=menuHTML(panelId);panel.scrollTop=st;
+  if(sel){const n=panel.querySelector(sel);if(n)n.focus({preventScroll:true});}
+}
+function setHL(ids){
+  hlSet=new Set(ids||[]);
+  orbitLines.forEach(l=>{
+    const pid=l.userData.pid;if(!pid)return;
+    const on=hlSet.has(pid);
+    l.material.color.set(on?0xffb347:0x8f9bbd);l.material.opacity=on?0.85:(hlSet.size?0.1:0.22);
+  });
+  chipsEl.querySelectorAll('.chip').forEach(c=>c.classList.toggle('hl',hlSet.has(c.dataset.go)));
+}
+function markMenu(id){
+  menubarEl.querySelectorAll('.menu-item').forEach(b=>{if(b.dataset.menu===id)b.setAttribute('aria-current','true');else b.removeAttribute('aria-current');});
+}
+function showMenu(id){
+  if(panelId===id){overview(false);return;}
+  selected=null;ctl.setFocus(null);ctl.minR=80;ctl.maxR=1800;ctl.rG=overviewR();ctl.phG=1.05;
+  markRail(null);setHL(null);grpSel=null;
+  openPanel(id);markMenu(id);
+  hintEl.classList.add('gone');
+}
+function openPanel(id){
+  panelId=id;panel.innerHTML=id==='overview'?overviewHTML():(id.indexOf('m-')===0?menuHTML(id):panelHTML(id));panel.scrollTop=0;
+  panel.classList.add('open');document.body.classList.add('panel-open');
+  setShift(true);
+}
+function closePanel(){panel.classList.remove('open');document.body.classList.remove('panel-open');panelId=null;setShift(false);}
+function setShift(open){
+  if(!open){ctl.shiftXG=0;ctl.shiftYG=0;return;}
+  if(MOBILE.matches){ctl.shiftXG=0;ctl.shiftYG=H*0.2;}else{ctl.shiftXG=(380+32)/2;ctl.shiftYG=0;}
+}
+function markRail(id){
+  chipsEl.querySelectorAll('.chip').forEach(c=>{
+    if(c.dataset.go===id){c.setAttribute('aria-current','true');c.scrollIntoView({inline:'center',block:'nearest',behavior:REDUCED?'auto':'smooth'});}
+    else c.removeAttribute('aria-current');
+  });
+}
+function select(id){
+  const b=bodies[id];if(!b)return;
+  setHL(null);markMenu(null);grpSel=null;
+  selected=b;ctl.setFocus(b);
+  ctl.minR=b.minR;ctl.maxR=b.maxR;ctl.rG=b.focusR;
+  ctl.phG=b.kind==='belt'?0.95:1.2;
+  openPanel(id);markRail(id in {belt:1,sun:1,mercury:1,venus:1,earth:1,mars:1,jupiter:1,saturn:1,uranus:1,neptune:1}?id:(b.kind==='moon'?b.parentId:'belt'));
+  hintEl.classList.add('gone');
+}
+function overview(showPanel){
+  selected=null;ctl.setFocus(null);ctl.minR=80;ctl.maxR=1800;ctl.rG=overviewR();ctl.phG=1.05;
+  markRail(null);setHL(null);markMenu(null);grpSel=null;
+  if(showPanel)openPanel('overview');else closePanel();
+}
+document.getElementById('brand').addEventListener('click',()=>overview(true));
+document.addEventListener('click',e=>{
+  const go=e.target.closest('[data-go]');
+  if(go){select(go.dataset.go);return;}
+  const mn=e.target.closest('[data-menu]');
+  if(mn){showMenu(mn.dataset.menu);return;}
+  const gp=e.target.closest('[data-grp]');
+  if(gp){grpSel=grpSel===gp.dataset.grp?null:gp.dataset.grp;setHL(grpSel?GROUPS.find(g=>g.id===grpSel).ids:null);renderMenu();return;}
+  const mt=e.target.closest('[data-metric]');
+  if(mt){metric=mt.dataset.metric;renderMenu();return;}
+  if(e.target.closest('[data-sort]')){sortDesc=!sortDesc;renderMenu();return;}
+  if(e.target.closest('#panel .close'))overview(false);
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')overview(false);});
+
+/* ปุ่มควบคุม */
+const playBtn=document.getElementById('play'),speedEl=document.getElementById('speed'),speedOut=document.getElementById('speedOut');
+playBtn.addEventListener('click',()=>{paused=!paused;playBtn.setAttribute('aria-pressed',String(paused));playBtn.textContent=paused?'เล่น':'หยุด';});
+speedEl.addEventListener('input',()=>{speed=parseFloat(speedEl.value);speedOut.textContent=speed+'×';});
+document.getElementById('tOrbits').addEventListener('click',e=>{showOrbits=!showOrbits;e.currentTarget.setAttribute('aria-pressed',String(showOrbits));});
+document.getElementById('tLabels').addEventListener('click',e=>{showLabels=!showLabels;e.currentTarget.setAttribute('aria-pressed',String(showLabels));labelsEl.style.display=showLabels?'':'none';});
+
+/* ============ การควบคุมด้วยเมาส์/นิ้ว และการคลิกเลือกดาว ============ */
+const ptrs=new Map(),ray=new THREE.Raycaster(),ndc=new THREE.Vector2();
+let travel=0,pinch0=0;
+const dist2=()=>{const v=Array.from(ptrs.values());return Math.hypot(v[0].x-v[1].x,v[0].y-v[1].y);};
+canvas.addEventListener('pointerdown',e=>{
+  canvas.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(ptrs.size===1)travel=0;
+  if(ptrs.size===2)pinch0=dist2();
+});
+canvas.addEventListener('pointermove',e=>{
+  const p=ptrs.get(e.pointerId);if(!p)return;
+  const dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;travel+=Math.abs(dx)+Math.abs(dy);
+  if(ptrs.size===1){ctl.thG-=dx*0.006;ctl.phG=clamp(ctl.phG-dy*0.006,0.1,Math.PI-0.1);}
+  else if(ptrs.size===2){const d=dist2();if(pinch0>0)zoom(pinch0/d);pinch0=d;}
+});
+const endPtr=e=>{
+  const had=ptrs.has(e.pointerId);ptrs.delete(e.pointerId);
+  if(had&&ptrs.size===0&&travel<8&&e.type==='pointerup')pick(e.clientX,e.clientY);
+  pinch0=0;
+};
+canvas.addEventListener('pointerup',endPtr);canvas.addEventListener('pointercancel',endPtr);
+canvas.addEventListener('wheel',e=>{e.preventDefault();zoom(Math.exp(e.deltaY*0.0012));},{passive:false});
+function pick(cx,cy){
+  ndc.set(cx/W*2-1,-(cy/H*2-1));ray.setFromCamera(ndc,camera);
+  const hits=ray.intersectObjects(pickables.filter(p=>p.userData.active()),false);
+  const h=hits.find(x=>x.object.userData.id!=='belt')||hits[0];
+  if(h)select(h.object.userData.id);
+}
+
+/* ============ ชื่อลอยบนดาว ============ */
+const labelItems=[];
+function makeLabels(){
+  Object.keys(bodies).forEach(id=>{
+    if(id==='belt')return;
+    const el=document.createElement('div');el.className='label';el.textContent=DATA[id].name;labelsEl.appendChild(el);
+    labelItems.push({id,el,b:bodies[id]});
+  });
+  const el=document.createElement('div');el.className='label';el.textContent=DATA.belt.name;labelsEl.appendChild(el);
+  labelItems.push({id:'belt',el,b:bodies.belt,fixed:new THREE.Vector3(Math.cos(0.5)*110,0,Math.sin(0.5)*110)});
+}
+const tmp=new THREE.Vector3();
+
+/* ============ ลูปแอนิเมชัน ============ */
+function frame(){
+  requestAnimationFrame(frame);
+  const dt=Math.min(clock.getDelta(),0.05),sd=paused?0:dt*speed;
+  const ids=Object.keys(bodies);
+  for(const id of ids){
+    const b=bodies[id];
+    if(b.kind==='planet'){
+      b.a+=b.w*sd;b.group.position.set(Math.cos(b.a)*b.def.R,0,Math.sin(b.a)*b.def.R);
+      b.mesh.rotation.y+=b.spin*sd;if(b.clouds)b.clouds.rotation.y+=b.spin*sd*1.12;
+    }else if(b.kind==='moon'){
+      b.a+=b.w*sd;const d=b.def.d;
+      b.group.position.set(Math.cos(b.a)*d,Math.sin(b.a)*d*Math.sin(b.inc),Math.sin(b.a)*d*Math.cos(b.inc));
+      b.mesh.rotation.y+=0.4*sd;
+    }else if(b.kind==='ceres'){
+      b.a+=b.w*sd;b.group.position.set(Math.cos(b.a)*b.R,0,Math.sin(b.a)*b.R);b.mesh.rotation.y+=0.8*sd;
+    }else if(b.kind==='belt'){b.group.rotation.y+=b.w*sd;}
+    else if(b.kind==='sun'){b.mesh.rotation.y+=0.03*(paused?0:dt);}
+  }
+  scene.updateMatrixWorld(true);
+  for(const id of ids)bodies[id].group.getWorldPosition(bodies[id].wp);
+  const sysId=selected?(selected.kind==='moon'?selected.parentId:(selected.kind==='planet'?selected.id:null)):null;
+  for(const id of ids){
+    const b=bodies[id];
+    if(b.kind==='moon'){
+      const pl=bodies[b.parentId];
+      b.group.visible=sysId===b.parentId||camera.position.distanceTo(pl.wp)<pl.moonShow;
+    }
+    if(b.proxy&&b.group.visible){const dd=camera.position.distanceTo(b.wp);b.proxy.scale.setScalar(Math.max(1,dd*0.02/b.r));}
+  }
+  ctl.update(dt);
+  orbitLines.forEach(l=>{l.visible=showOrbits;});
+  moonLines.forEach(l=>{l.visible=showOrbits&&sysId===l.userData.of;});
+  renderer.render(scene,camera);
+  camera.updateMatrixWorld();
+  if(showLabels){
+    for(const it of labelItems){
+      const b=it.b;let vis=true;
+      if(b.kind==='moon')vis=b.group.visible;
+      if(b.kind==='ceres')vis=selected&&(selected.id==='belt'||selected.id==='ceres');
+      if(it.id==='belt')vis=!selected||selected.id==='belt'||selected.id==='ceres';
+      if(!vis){it.el.style.display='none';continue;}
+      tmp.copy(it.fixed||b.wp).project(camera);
+      if(tmp.z>1||tmp.z<-1){it.el.style.display='none';continue;}
+      const x=(tmp.x*0.5+0.5)*W,y=(-tmp.y*0.5+0.5)*H,off=it.id==='sun'?22:10;
+      it.el.style.display='';it.el.style.transform='translate('+(x+off).toFixed(1)+'px,'+(y-8).toFixed(1)+'px)';
+      it.el.classList.toggle('on',(!!selected&&selected.id===it.id)||hlSet.has(it.id));
+      it.el.classList.toggle('dim',hlSet.size>0&&!hlSet.has(it.id));
+    }
+  }
+}
+
+/* ============ เริ่มต้น ============ */
+build().then(()=>{
+  makeLabels();
+  ctl.minR=80;ctl.maxR=1800;ctl.rG=overviewR();
+  if(!REDUCED){ctl.r=Math.min(ctl.rG*3.2,3000);ctl.th=-1.2;ctl.ph=0.45;}else{ctl.r=ctl.rG;ctl.th=ctl.thG;ctl.ph=ctl.phG;}
+  scene.updateMatrixWorld(true);
+  clock.start();frame();
+  loaderEl.classList.add('done');
+  setTimeout(()=>{loaderEl.style.display='none';},1000);
+  setTimeout(()=>{if(!MOBILE.matches)overview(true);},REDUCED?0:1800);
+  setTimeout(()=>hintEl.classList.add('gone'),9000);
+  window.addEventListener('resize',()=>{if(panelId)setShift(true);});
+}).catch(err=>{
+  console.error(err);
+  document.getElementById('loadMsg').textContent='สร้างฉากไม่สำเร็จ ลองโหลดหน้าใหม่อีกครั้ง';
+});
+
+})();
+</script>
+</body>
+</html>
